@@ -1,21 +1,35 @@
 @import "tailwindcss";
 
+/* A/B 선택 색: dataviz 검증 팔레트 1·2번 슬롯(파랑·주황). 라이트/다크 모두 validate_palette 통과.
+   --choice-*-ink 는 글자용(배경 대비 4.5:1 이상) */
 :root {
   --background: #ffffff;
   --foreground: #171717;
-}
-
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-noto-sans-kr), system-ui, sans-serif;
+  --choice-a: #2a78d6;
+  --choice-b: #eb6834;
+  --choice-a-ink: #1d4ed8;
+  --choice-b-ink: #c2410c;
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
     --background: #0a0a0a;
     --foreground: #ededed;
+    --choice-a: #3987e5;
+    --choice-b: #d95926;
+    --choice-a-ink: #93c5fd;
+    --choice-b-ink: #fdba74;
   }
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-choice-a: var(--choice-a);
+  --color-choice-b: var(--choice-b);
+  --color-choice-a-ink: var(--choice-a-ink);
+  --color-choice-b-ink: var(--choice-b-ink);
+  --font-sans: var(--font-noto-sans-kr), system-ui, sans-serif;
 }
 
 body {

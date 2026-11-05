@@ -65,8 +65,15 @@ supabase/migrations/       # 스키마 + 딜레마 문항
 
 ## 기술 결정
 
-- 그래프: Recharts (100% 누적 가로 막대). 워드클라우드: `d3-cloud` + 직접 SVG (`react-wordcloud`는 쓰지 않는다)
-- 키워드: 규칙 기반 JS(토큰화 → 조사·어미 제거 → 불용어·금칙어 제거 → 2글자 이상 → 상위 50개). 형태소 분석기는 쓰지 않는다(Vercel 서버리스 제약).
+- 그래프: HTML/CSS로 직접 그린 100% 가로 막대(`ChoiceRatioBar`). 막대가 2칸뿐이라 Recharts는 빼고 의존성도 지웠다.
+  A/B 색은 dataviz 검증 팔레트 1·2번(파랑 `#2a78d6`/`#3987e5`, 주황 `#eb6834`/`#d95926`)이고, 글자용 진한 색은 `--choice-*-ink`다(`globals.css`). 선택지 문구, 비율, 인원을 직접 라벨로 붙여서 색만으로 구분하지 않게 했다.
+- 워드클라우드: **`d3-cloud` v2**(`new CloudLayout()` + `getSprite`/`place`, 동기 API)로 배치하고 SVG로 그린다. v1용 `@types/d3-cloud`는 맞지 않아 지웠다. 시드를 고정해서 배치가 매번 같고, 웹폰트를 로드한 뒤(`document.fonts.ready`) 배치한다. 딜레마마다 전체/A 선택/B 선택 탭이 있고, "키워드 목록으로 보기" 표를 함께 둔다.
+- 키워드(`src/lib/keywords.ts`): 형태소 분석기 없이 규칙으로 뽑는다(Vercel 서버리스 제약).
+  순서: 토큰화 → 조사 제거 → 어미 제거 → 활용형 끝말(`PREDICATE_END`)로 끝나는 동사·형용사 제거 → 불용어·금칙어 제거 → 2글자 이상.
+  `PREDICATE_END`에 걸리지만 의미 있는 명사는 `NOUN_EXCEPTIONS`(배려, 격려, 이해, 신고…)로 살린다.
+  한 응답 안에서 같은 단어는 한 번만 센다(문서 빈도). **2명 이상이 쓴 단어만**, 상위 40개까지 보여 준다. 노이즈 단어가 보이면 `STOPWORDS`/`PREDICATE_END`/`STEM_FIXES`로 조정한다.
+- 통계 데이터(`src/lib/stats.ts`의 `getStats`): `"use cache"` + `cacheLife("minutes")`이고 필터 값이 캐시 키다. 필터 결과가 5명 미만이면 수치와 키워드를 아예 계산하지 않는다. 키워드 칸(전체/A/B)도 각각 5건 미만이면 숨긴다.
+- `/stats`는 searchParams를 `<Suspense>` 안에서만 읽어서 정적 셸 + 스트리밍(Partial Prerender)으로 동작한다. 잘못된 쿼리 값은 "전체"로 처리한다.
 - 제출: `submitSurvey` Server Action(`src/app/survey/actions.ts`)이 같은 zod 스키마로 다시 검증하고 RPC를 호출한다. 결과는 `{ ok } | { ok: false, error }`로 돌려주고, 클라이언트에서 `router.replace("/survey/done")`로 이동한다(redirect를 쓰지 않는다). 입력값 오류(22023/23514/22P02/23503)와 서버 오류는 안내 문구를 다르게 보여 준다.
 - 중복 제출: localStorage 플래그(`ethics-dilemma:submitted-at`, `src/lib/submitted-flag.ts`)로 가볍게만 막는다. **학교에서는 기기를 같이 쓰므로 차단하지 않는다.** "이미 참여했어요" 안내와 "새로 참여하기" 버튼만 보여 준다. 플래그는 `useSyncExternalStore`로 읽는다(hydration 불일치 방지).
 - 레이트 리밋은 하지 않는다. 서버리스에서는 메모리 기반 제한이 의미가 없고, IP를 저장하지 않는 방침이기 때문이다.
@@ -82,15 +89,42 @@ supabase/migrations/       # 스키마 + 딜레마 문항
 
 ## 작업 단계
 
-1. 프로젝트 세팅 (Next.js, 의존성, 폴더 골격, env 예시, supabase init)
-2. DB 마이그레이션(스키마·권한·RPC·문항) + 타입 생성
-3. 응답 페이지 UI (모바일 우선, 초등도 읽기 쉬운 글자 크기)
-4. 제출 처리 (Server Action + zod + RPC + 완료 페이지 + 중복 방지)
-5. 통계 집계 + 필터 바 + 총 응답 수
-6. A/B 비율 그래프
-7. 키워드 추출 + 워드클라우드 + 표본 5명 미만 처리
-8. 점검 (대량 테스트 데이터, 모바일, RLS 우회 시도)
-9. Vercel 배포
+1. ✅ 프로젝트 세팅 (Next.js, 의존성, 폴더 골격, env 예시, supabase init)
+2. ✅ DB 마이그레이션(스키마·권한·RPC·문항) + 타입 생성
+3. ✅ 응답 페이지 UI (모바일 우선, 초등도 읽기 쉬운 글자 크기)
+4. ✅ 제출 처리 (Server Action + zod + RPC + 완료 페이지 + 중복 방지) + 서술형 필수화
+5. ✅ 통계 집계 + 필터 바 + 총 응답 수
+6. ✅ A/B 비율 그래프
+7. ✅ 키워드 추출 + 워드클라우드(딜레마별, 전체/A/B 탭) + 표본 5명 미만 처리
+8. ⬜ 점검 (대량 테스트 데이터, 모바일, RLS 우회 시도)
+9. ⬜ Vercel 배포
+
+## 진행 상황 (2026-11-05 기준)
+
+- 1~7단계 완료. 모두 커밋해서 GitHub(`origin/main`, https://github.com/yhee79-sys/ethics-dilemma)에 올렸다.
+- 운영 Supabase DB(`ododcndqhxuepyhiinaq`)에는 마이그레이션 3개가 적용되어 있다(init, dilemmas, reason_required).
+- **운영 DB의 응답 데이터는 0건이다.** 테스트 데이터는 사용자가 확인한 뒤 모두 지웠다.
+- 사용자가 통계 화면(필터, 비율 막대, 워드클라우드 탭, 표본 부족 처리)을 테스트 데이터로 확인하고 승인했다.
+
+## 다음에 할 일
+
+### 8단계: 점검
+- 대량 테스트 데이터(수천 건)로 통계 응답 속도와 서술형 페이지 나눠 읽기(1000건 초과)를 확인한다.
+  테스트 데이터는 넣은 id를 파일에 저장해 두고, **사용자에게 화면을 확인받은 뒤** 그 id만 지운다.
+- RLS 우회 시도: publishable(anon) 키로 REST/RPC를 호출해서 모든 테이블과 함수가 막히는지 확인한다.
+  publishable 키는 `npx supabase projects api-keys`로 확인한다(`--reveal` 쓰지 않기).
+- 실제 휴대폰 화면 확인(iOS Safari, Android Chrome), 키보드만으로 조작, 화면 낭독기 라벨 확인
+- 키워드 품질: 실제 응답이 쌓이면 노이즈 단어를 보고 `STOPWORDS`/`PREDICATE_END`/`NOUN_EXCEPTIONS`를 조정한다.
+- (선택) `get_reasons`에 응답자 조건 인덱스가 필요한지 대량 데이터로 `explain` 확인
+
+### 9단계: Vercel 배포
+- GitHub 저장소를 Vercel에 연결하고, 환경변수 `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`(secret key)를 등록한다. 둘 다 `NEXT_PUBLIC_`을 붙이지 않는다.
+- 빌드할 때 `/survey`를 미리 렌더링하면서 Supabase를 조회하므로, 빌드 환경에도 환경변수가 있어야 한다.
+- 배포 후 실제 주소에서 제출 → 통계 반영(최대 약 1분)을 확인하고, 그 테스트 응답은 지운다.
+
+### 참고
+- Supabase CLI는 `--remote`를 붙여야 원격에 적용된다. 운영 DB에 쓰는 쿼리는 사용자 동의를 받은 뒤 `--yes`로 실행한다.
+- 로컬 확인용 서버는 `node node_modules/next/dist/bin/next start -p 3123`으로 띄운다. `npx`로 띄우면 종료할 때 자식 프로세스가 남아 포트를 계속 잡는다. 3000번 포트는 충돌한 적이 있다.
 
 ## 딜레마 문항 (확정)
 
