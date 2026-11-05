@@ -96,12 +96,13 @@ supabase/migrations/       # 스키마 + 딜레마 문항
 5. ✅ 통계 집계 + 필터 바 + 총 응답 수
 6. ✅ A/B 비율 그래프
 7. ✅ 키워드 추출 + 워드클라우드(딜레마별, 전체/A/B 탭) + 표본 5명 미만 처리
-8. 🔶 점검 (대량 테스트 데이터 ✅, RLS 우회 시도 ✅, 키보드·화면 낭독기 코드 점검 ✅, 실제 휴대폰 ⬜)
-9. ⬜ Vercel 배포
+8. ✅ 점검 (대량 테스트 데이터, RLS 우회 시도, 키보드·화면 낭독기 코드 점검, 실제 휴대폰)
+9. ✅ Vercel 배포 (https://ethics-dilemma.vercel.app)
+10. ⬜ 디자인 다듬기 (따뜻하고 차분한 포인트 색, 라이트·다크 모드)
 
 ## 진행 상황 (2026-11-05 기준)
 
-- 1~7단계 완료. 모두 커밋해서 GitHub(`origin/main`, https://github.com/yhee79-sys/ethics-dilemma)에 올렸다.
+- 1~9단계 완료. 모두 커밋해서 GitHub(`origin/main`, https://github.com/yhee79-sys/ethics-dilemma)에 올렸다.
 - 운영 Supabase DB(`ododcndqhxuepyhiinaq`)에는 마이그레이션 3개가 적용되어 있다(init, dilemmas, reason_required).
 - **운영 DB의 응답 데이터는 0건이다.** 테스트 데이터는 사용자가 확인한 뒤 모두 지웠다.
 - 사용자가 통계 화면(필터, 비율 막대, 워드클라우드 탭, 표본 부족 처리)을 테스트 데이터로 확인하고 승인했다.
@@ -115,19 +116,26 @@ supabase/migrations/       # 스키마 + 딜레마 문항
     이유 오류 시 입력칸으로 포커스, 알림 영역(`role="alert"`)은 항상 두고 내용만 바꿈, 진행 막대 `aria-valuetext`,
     하단 고정 바에 포커스가 가리지 않게 `scroll-padding-bottom`, 키워드 탭은 ARIA 탭 패턴(←/→/Home/End, 선택된 탭만 Tab 순서),
     통계 인원 칸 `aria-live`로 필터 변경 알림.
+  - 실제 휴대폰: 사용자가 배포 주소에서 제출해 보고 화면에 문제가 없다고 확인했다.
+- 9단계 배포 결과 (2026-11-05)
+  - Vercel 프로젝트를 GitHub `main`에 연결했다. `main`에 push하면 자동 배포된다. 주소: https://ethics-dilemma.vercel.app
+  - 환경변수 `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`(secret key, `NEXT_PUBLIC_` 없음)를 등록했다. 빌드할 때 `/survey`를 미리 렌더링하면서 DB를 조회하므로 빌드 환경에도 필요하다.
+  - Function Region은 Supabase(`ap-northeast-2`)와 같은 서울(`icn1`)이다.
+  - 배포 확인: 모든 페이지 200, 없는 주소 404, 클라이언트 JS 12개에 secret·환경변수 이름·Supabase 주소 없음,
+    휴대폰 제출 → DB 저장(공백 정리) → 1분 안에 `/stats` 반영. 그 테스트 응답 1건은 사용자 확인 후 지웠다(운영 DB 0건).
+  - Preview 배포(다른 브랜치)도 같은 운영 DB를 쓴다.
 
 ## 다음에 할 일
 
-### 8단계: 점검 (남은 것)
-- 실제 휴대폰 화면 확인(iOS Safari, Android Chrome), 키보드만으로 조작, 화면 낭독기 라벨 확인
+### 10단계: 디자인 다듬기
+- 첫 화면 안내 문구를 문장마다 줄을 나눠 두 줄로 보여 준다.
+- 흰색·검은색 위주에서 따뜻하고 차분한 포인트 색을 넣는다. 라이트·다크 모드 둘 다 확인한다. 색과 분위기는 사용자 승인 후 적용한다.
+
+### 운영 중 할 일
+- **이제 실제 응답이 쌓이는 운영 DB다.** 테스트 응답을 넣으면 반드시 id를 기록하고 그 행만 지운다.
 - 키워드 품질: 실제 응답이 쌓이면 노이즈 단어를 보고 `STOPWORDS`/`PREDICATE_END`/`NOUN_EXCEPTIONS`를 조정한다.
   (`협력적으로` → `협력적`으로 남는 문제가 있다. 조사 `으로`가 어미 `적으로`보다 먼저 떼어지기 때문)
 - 운영 DB에 id 목록으로 지울 때는 SQL이 길어 명령줄 제한에 걸리므로 파일로 만들어 `db query --remote --yes -f <파일>`로 실행한다.
-
-### 9단계: Vercel 배포
-- GitHub 저장소를 Vercel에 연결하고, 환경변수 `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`(secret key)를 등록한다. 둘 다 `NEXT_PUBLIC_`을 붙이지 않는다.
-- 빌드할 때 `/survey`를 미리 렌더링하면서 Supabase를 조회하므로, 빌드 환경에도 환경변수가 있어야 한다.
-- 배포 후 실제 주소에서 제출 → 통계 반영(최대 약 1분)을 확인하고, 그 테스트 응답은 지운다.
 
 ### 참고
 - Supabase CLI는 `--remote`를 붙여야 원격에 적용된다. 운영 DB에 쓰는 쿼리는 사용자 동의를 받은 뒤 `--yes`로 실행한다.
