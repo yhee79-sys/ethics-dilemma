@@ -13,10 +13,9 @@ type Props = {
 export function ChoiceCard({ name, value, checked, onChange, children, badge }: Props) {
   return (
     <label
-      className="flex cursor-pointer items-center gap-3 rounded-2xl border-2 border-zinc-200 bg-white p-4 text-lg transition-colors
-        hover:border-zinc-400 has-checked:border-indigo-600 has-checked:bg-indigo-50
-        has-focus-visible:ring-4 has-focus-visible:ring-indigo-300
-        dark:border-zinc-700 dark:bg-zinc-900 dark:hover:border-zinc-500 dark:has-checked:border-indigo-400 dark:has-checked:bg-indigo-950"
+      className="flex cursor-pointer items-center gap-3 rounded-2xl border-2 border-line bg-background p-4 text-lg transition-colors
+        hover:border-line-strong has-checked:border-accent has-checked:bg-accent-soft
+        has-focus-visible:ring-4 has-focus-visible:ring-accent/40"
     >
       <input
         type="radio"
@@ -29,8 +28,8 @@ export function ChoiceCard({ name, value, checked, onChange, children, badge }: 
       {badge && (
         <span
           aria-hidden
-          className={`flex size-9 shrink-0 items-center justify-center rounded-full text-base font-bold ${
-            checked ? "bg-indigo-600 text-white dark:bg-indigo-400 dark:text-zinc-900" : "bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-300"
+          className={`flex size-9 shrink-0 items-center justify-center rounded-full text-base font-display ${
+            checked ? "bg-accent text-on-accent" : "bg-surface text-muted"
           }`}
         >
           {badge}

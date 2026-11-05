@@ -19,7 +19,7 @@ function EditButton({ onClick, label }: { onClick: () => void; label: string }) 
       type="button"
       onClick={onClick}
       aria-label={label}
-      className="shrink-0 rounded-lg px-3 py-1.5 text-base font-semibold text-indigo-700 hover:bg-indigo-50 dark:text-indigo-300 dark:hover:bg-indigo-950"
+      className="shrink-0 rounded-lg px-3 py-1.5 text-base font-display text-accent-ink hover:bg-accent-soft"
     >
       고치기
     </button>
@@ -32,9 +32,9 @@ export function ReviewStep({ group, gender, dilemmas, answers, easy, onEditProfi
 
   return (
     <div className="space-y-6">
-      <h2 className="text-2xl font-bold">{easy ? "내 답을 확인해요" : "응답 확인"}</h2>
+      <h2 className="text-2xl font-display">{easy ? "내 답을 확인해요" : "응답 확인"}</h2>
 
-      <section className="flex items-center justify-between gap-3 rounded-2xl border border-zinc-200 p-4 dark:border-zinc-800">
+      <section className="flex items-center justify-between gap-3 rounded-2xl border border-line p-4">
         <p className="text-lg">
           {groupLabel} · {genderLabel}
         </p>
@@ -46,22 +46,22 @@ export function ReviewStep({ group, gender, dilemmas, answers, easy, onEditProfi
           const a = answers[d.id];
           const reason = normalizeReason(a?.reason);
           return (
-            <li key={d.id} className="space-y-2 rounded-2xl border border-zinc-200 p-4 dark:border-zinc-800">
+            <li key={d.id} className="space-y-2 rounded-2xl border border-line p-4">
               <div className="flex items-start justify-between gap-3">
-                <h3 className="text-lg font-bold">
+                <h3 className="text-lg font-display">
                   {i + 1}. {d.title}
                 </h3>
                 <EditButton onClick={() => onEditDilemma(i)} label={`${i + 1}번 질문 고치기`} />
               </div>
               {a?.choice && (
                 <p className="text-lg">
-                  <span className="mr-2 inline-flex size-7 items-center justify-center rounded-full bg-indigo-600 text-sm font-bold text-white dark:bg-indigo-400 dark:text-zinc-900">
+                  <span className="mr-2 inline-flex size-7 items-center justify-center rounded-full bg-accent text-sm font-display text-on-accent">
                     {a.choice}
                   </span>
                   {optionText(d, a.choice, easy)}
                 </p>
               )}
-              <p className="whitespace-pre-wrap text-base text-zinc-600 dark:text-zinc-400">
+              <p className="whitespace-pre-wrap text-base text-muted">
                 {reason}
               </p>
             </li>

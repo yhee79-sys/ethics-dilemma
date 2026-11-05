@@ -12,7 +12,7 @@ export function GroupGenderSelect({ group, gender, onGroupChange, onGenderChange
   return (
     <div className="space-y-8">
       <fieldset className="space-y-3">
-        <legend className="mb-3 text-xl font-bold">나는 누구인가요?</legend>
+        <legend className="mb-3 text-xl font-display">나는 누구인가요?</legend>
         <div className="grid grid-cols-2 gap-3">
           {TARGET_GROUPS.map((g) => (
             <ChoiceCard key={g.value} name="group" value={g.value} checked={group === g.value} onChange={(v) => onGroupChange(v as TargetGroup)}>
@@ -23,7 +23,7 @@ export function GroupGenderSelect({ group, gender, onGroupChange, onGenderChange
       </fieldset>
 
       <fieldset className="space-y-3">
-        <legend className="mb-3 text-xl font-bold">성별</legend>
+        <legend className="mb-3 text-xl font-display">성별</legend>
         <div className="grid grid-cols-3 gap-3">
           {GENDERS.map((g) => (
             <ChoiceCard key={g.value} name="gender" value={g.value} checked={gender === g.value} onChange={(v) => onGenderChange(v as Gender)}>
@@ -33,7 +33,10 @@ export function GroupGenderSelect({ group, gender, onGroupChange, onGenderChange
         </div>
       </fieldset>
 
-      <p className="text-base text-zinc-500 dark:text-zinc-400">이름, 학교, 연락처는 묻지 않아요. 응답은 익명으로 모아서 통계로만 보여 줘요.</p>
+      <p className="text-base leading-relaxed text-muted">
+        <span className="block">이름, 학교, 연락처는 묻지 않아요.</span>
+        <span className="block">응답은 익명으로 모아서 통계로만 보여 줘요.</span>
+      </p>
     </div>
   );
 }

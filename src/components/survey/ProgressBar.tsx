@@ -4,7 +4,7 @@ export function ProgressBar({ current, total }: Props) {
   const pct = Math.round((current / total) * 100);
   return (
     <div className="space-y-2">
-      <div className="text-base font-semibold text-indigo-700 dark:text-indigo-300">
+      <div className="text-base font-display text-accent-ink">
         질문 {current} / {total}
       </div>
       <div
@@ -14,9 +14,9 @@ export function ProgressBar({ current, total }: Props) {
         aria-valuenow={current}
         aria-valuetext={`질문 ${current} / ${total}`}
         aria-label="설문 진행도"
-        className="h-2 overflow-hidden rounded-full bg-zinc-200 dark:bg-zinc-800"
+        className="h-2 overflow-hidden rounded-full bg-surface"
       >
-        <div className="h-full rounded-full bg-indigo-600 transition-[width] dark:bg-indigo-400" style={{ width: `${pct}%` }} />
+        <div className="h-full rounded-full bg-accent transition-[width]" style={{ width: `${pct}%` }} />
       </div>
     </div>
   );

@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { submitSurvey } from "@/app/survey/actions";
-import type { Gender, TargetGroup } from "@/lib/constants";
+import { SITE_NAME, type Gender, type TargetGroup } from "@/lib/constants";
 import { hasSubmitted, markSubmitted } from "@/lib/submitted-flag";
 import { reasonError, type SubmissionInput } from "@/lib/validation";
 import type { DraftAnswer, SurveyDilemma } from "@/types/survey";
@@ -20,13 +20,9 @@ const noopSubscribe = () => () => {};
 const EMPTY: DraftAnswer = { choice: null, reason: "" };
 
 // "다음"은 disabled 대신 aria-disabled를 쓴다. disabled면 Tab 순서에서 빠져서 키보드·화면 낭독기 사용자가 이유를 알 수 없다.
-const primaryBtn =
-  "flex-1 rounded-2xl bg-indigo-600 px-6 py-4 text-lg font-semibold text-white transition-colors hover:bg-indigo-700 dark:bg-indigo-600 dark:hover:bg-indigo-500 " +
-  "disabled:cursor-not-allowed disabled:bg-zinc-300 disabled:text-zinc-500 dark:disabled:bg-zinc-800 dark:disabled:text-zinc-500 " +
-  "aria-disabled:cursor-not-allowed aria-disabled:bg-zinc-300 aria-disabled:text-zinc-500 aria-disabled:hover:bg-zinc-300 " +
-  "dark:aria-disabled:bg-zinc-800 dark:aria-disabled:text-zinc-500 dark:aria-disabled:hover:bg-zinc-800";
-const secondaryBtn =
-  "rounded-2xl border-2 border-zinc-300 px-6 py-4 text-lg font-semibold transition-colors hover:bg-zinc-100 dark:border-zinc-700 dark:hover:bg-zinc-900";
+// 버튼 모양(비활성 포함)은 globals.css의 btn-primary / btn-secondary
+const primaryBtn = "btn-primary flex-1 px-6 py-4 text-lg";
+const secondaryBtn = "btn-secondary px-6 py-4 text-lg";
 
 export function SurveyForm({ dilemmas }: Props) {
   const router = useRouter();
@@ -137,25 +133,26 @@ export function SurveyForm({ dilemmas }: Props) {
         {dilemma ? (
           <ProgressBar current={step} total={total} />
         ) : (
-          <h1 className="text-3xl font-bold">윤리 딜레마 설문</h1>
+          <h1 className="font-display text-3xl">{SITE_NAME}</h1>
         )}
       </div>
 
       {step === 0 && showNotice && (
         <div role="status" className="space-y-3 rounded-2xl border-2 border-amber-300 bg-amber-50 p-4 dark:border-amber-700 dark:bg-amber-950">
-          <p className="text-lg font-semibold">이 기기에서 이미 설문에 참여했어요.</p>
-          <p className="text-base text-zinc-700 dark:text-zinc-300">
-            다른 사람이 이 기기로 참여하는 거라면 새로 시작해 주세요. 같은 사람이 여러 번 참여하면 통계가 정확하지 않아요.
+          <p className="text-lg font-display">이 기기에서 이미 설문에 참여했어요.</p>
+          <p className="text-base text-muted">
+            <span className="block">다른 사람이 이 기기로 참여하는 거라면 새로 시작해 주세요.</span>
+            <span className="block">같은 사람이 여러 번 참여하면 통계가 정확하지 않아요.</span>
           </p>
           <div className="flex flex-wrap gap-2">
             <button
               type="button"
               onClick={() => setNoticeDismissed(true)}
-              className="rounded-xl bg-amber-600 px-4 py-2 text-base font-semibold text-white hover:bg-amber-700"
+              className="rounded-xl bg-amber-600 px-4 py-2 text-base font-display text-white hover:bg-amber-700"
             >
               새로 참여하기
             </button>
-            <Link href="/stats" className="rounded-xl border border-amber-400 px-4 py-2 text-base font-semibold hover:bg-amber-100 dark:border-amber-700 dark:hover:bg-amber-900">
+            <Link href="/stats" className="rounded-xl border border-amber-400 px-4 py-2 text-base font-display hover:bg-amber-100 dark:border-amber-700 dark:hover:bg-amber-900">
               통계 보기
             </Link>
           </div>
@@ -192,9 +189,9 @@ export function SurveyForm({ dilemmas }: Props) {
       )}
 
       {!(step === 0 && showNotice) && (
-        <div className="sticky bottom-0 -mx-4 space-y-2 border-t border-zinc-200 bg-background/95 px-4 py-4 backdrop-blur dark:border-zinc-800">
+        <div className="sticky bottom-0 -mx-4 space-y-2 border-t border-line bg-background/95 px-4 py-4 backdrop-blur">
           {/* 알림 영역은 항상 두고 내용만 바꾼다. 비어 있을 때는 자리를 차지하지 않게 sr-only */}
-          <p role="alert" className="text-center text-base font-semibold text-rose-600 empty:sr-only dark:text-rose-400">
+          <p role="alert" className="text-center text-base font-display text-danger empty:sr-only">
             {missingMessage}
           </p>
           <div className="flex gap-3">
@@ -217,7 +214,7 @@ export function SurveyForm({ dilemmas }: Props) {
       )}
 
       {submitError && (
-        <p role="alert" className="text-center text-base text-rose-600 dark:text-rose-400">
+        <p role="alert" className="text-center text-base text-danger">
           {submitError}
         </p>
       )}

@@ -13,7 +13,7 @@ function href(group: TargetGroup | null, gender: Gender | null) {
 function Segment({ label, options }: { label: string; options: { key: string; text: string; href: ReturnType<typeof href>; active: boolean }[] }) {
   return (
     <nav aria-label={label} className="space-y-2">
-      <div className="text-sm font-semibold text-zinc-500 dark:text-zinc-400">{label}</div>
+      <div className="text-sm font-display text-muted">{label}</div>
       <div className="flex flex-wrap gap-2">
         {options.map((o) => (
           <Link
@@ -21,9 +21,8 @@ function Segment({ label, options }: { label: string; options: { key: string; te
             href={o.href}
             scroll={false}
             aria-current={o.active ? "page" : undefined}
-            className="rounded-full border-2 border-zinc-200 px-4 py-2 text-base font-semibold transition-colors hover:border-zinc-400
-              aria-[current=page]:border-zinc-900 aria-[current=page]:bg-zinc-900 aria-[current=page]:text-white
-              dark:border-zinc-700 dark:hover:border-zinc-500 dark:aria-[current=page]:border-zinc-100 dark:aria-[current=page]:bg-zinc-100 dark:aria-[current=page]:text-zinc-900"
+            className="rounded-full border-2 border-line px-4 py-2 text-base font-display transition-colors hover:border-line-strong
+              aria-[current=page]:border-accent aria-[current=page]:bg-accent aria-[current=page]:text-on-accent"
           >
             {o.text}
           </Link>

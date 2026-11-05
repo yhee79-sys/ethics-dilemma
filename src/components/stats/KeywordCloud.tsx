@@ -58,7 +58,7 @@ function layoutWords(keywords: Keyword[], width: number, fontFamily: string): Pl
   const placed: Placed[] = [];
   // 큰 단어부터 놓는다 (keywords는 이미 많이 나온 순)
   for (const k of keywords) {
-    const sprite = layout.getSprite(k.text, { size: scale(k.count), font: fontFamily, fontWeight: 700, padding: 3, rotate: 0, datum: k });
+    const sprite = layout.getSprite(k.text, { size: scale(k.count), font: fontFamily, fontWeight: 400, padding: 3, rotate: 0, datum: k });
     const word = sprite && layout.place(sprite);
     if (word) placed.push({ text: k.text, count: k.count, size: word.size, x: word.x, y: word.y });
   }
@@ -72,12 +72,18 @@ function CloudSvg({ keywords, width, ink, label }: { keywords: Keyword[]; width:
 
   useEffect(() => {
     let cancelled = false;
-    // 웹폰트가 로드된 뒤에 글자 크기를 재야 겹치지 않는다
-    document.fonts.ready.then(() => {
-      if (cancelled || !svgRef.current) return;
-      const font = getComputedStyle(svgRef.current).fontFamily;
-      setPlaced({ key: layoutKey, words: layoutWords(keywords, width, font), font });
-    });
+    // 웹폰트가 로드된 뒤에 글자 크기를 재야 겹치지 않는다.
+    // 한글 웹폰트는 글자 묶음(unicode-range)별로 나눠 받으므로, 키워드에 쓰인 글자를 먼저 불러온다.
+    const svg = svgRef.current;
+    if (!svg) return;
+    const font = getComputedStyle(svg).fontFamily;
+    const glyphs = keywords.map((k) => k.text).join("");
+    Promise.all([document.fonts.load(`400 20px ${font}`, glyphs), document.fonts.ready])
+      .catch(() => {}) // 폰트를 못 받아도 대체 폰트로 배치한다
+      .then(() => {
+        if (cancelled) return;
+        setPlaced({ key: layoutKey, words: layoutWords(keywords, width, font), font });
+      });
     return () => {
       cancelled = true;
     };
@@ -93,7 +99,7 @@ function CloudSvg({ keywords, width, ink, label }: { keywords: Keyword[]; width:
       viewBox={`${-width / 2} ${-HEIGHT / 2} ${width} ${HEIGHT}`}
       role="img"
       aria-label={`${label} 키워드: ${keywords.slice(0, 10).map((k) => `${k.text} ${k.count}명`).join(", ")}`}
-      className="block font-sans"
+      className="block font-display"
     >
       {current?.words.map((w) => (
         <text
@@ -102,7 +108,7 @@ function CloudSvg({ keywords, width, ink, label }: { keywords: Keyword[]; width:
           textAnchor="middle"
           fontFamily={current.font}
           fontSize={w.size}
-          fontWeight={700}
+          fontWeight={400}
           className={`${ink} cursor-default transition-opacity hover:opacity-70`}
         >
           <title>{`${w.text} · ${w.count}명`}</title>
@@ -140,7 +146,7 @@ export function KeywordCloud({ clouds, optionA, optionB }: Props) {
 
   return (
     <div className="space-y-3">
-      <div role="tablist" aria-label="키워드 보기" className="flex gap-1 rounded-xl bg-zinc-100 p-1 dark:bg-zinc-900">
+      <div role="tablist" aria-label="키워드 보기" className="flex gap-1 rounded-xl bg-surface p-1">
         {TABS.map((t, i) => (
           <button
             key={t.key}
@@ -155,12 +161,12 @@ export function KeywordCloud({ clouds, optionA, optionB }: Props) {
             tabIndex={tab === t.key ? 0 : -1}
             onClick={() => setTab(t.key)}
             onKeyDown={(e) => onTabKeyDown(e, i)}
-            className="flex flex-1 items-center justify-center gap-1 whitespace-nowrap rounded-lg px-1.5 py-2 text-sm font-semibold text-zinc-600 transition-colors
-              aria-selected:bg-white aria-selected:text-foreground aria-selected:shadow-sm dark:text-zinc-400 dark:aria-selected:bg-zinc-800"
+            className="flex flex-1 items-center justify-center gap-1 whitespace-nowrap rounded-lg px-1.5 py-2 text-sm font-display text-muted transition-colors
+              aria-selected:bg-background aria-selected:text-foreground aria-selected:shadow-sm"
           >
             {t.key !== "all" && <span aria-hidden className={`size-2.5 rounded-full ${t.key === "A" ? "bg-choice-a" : "bg-choice-b"}`} />}
             {t.label}
-            <span className="font-normal tabular-nums text-zinc-500 dark:text-zinc-400">
+            <span className="font-sans tabular-nums text-muted">
               {clouds[t.key].n}
               <span className="sr-only">건</span>
             </span>
@@ -169,17 +175,17 @@ export function KeywordCloud({ clouds, optionA, optionB }: Props) {
       </div>
 
       <div id={`${id}-panel`} role="tabpanel" aria-labelledby={`${id}-tab-${tab}`} className="space-y-2">
-        <p className="text-sm text-zinc-500 dark:text-zinc-400">
+        <p className="text-sm text-muted">
           {tabTitle} · 서술형 {current.n}건 기준
         </p>
 
-        <div ref={boxRef} className="w-full overflow-hidden rounded-2xl border border-zinc-200 dark:border-zinc-800" style={{ minHeight: HEIGHT }}>
+        <div ref={boxRef} className="w-full overflow-hidden rounded-2xl border border-line" style={{ minHeight: HEIGHT }}>
           {current.keywords === null ? (
-            <p className="flex items-center justify-center px-4 text-center text-base text-zinc-500 dark:text-zinc-400" style={{ height: HEIGHT }}>
+            <p className="flex items-center justify-center px-4 text-center text-base text-muted" style={{ height: HEIGHT }}>
               응답이 {MIN_SAMPLE}개 이상 모이면 키워드를 보여 줘요.
             </p>
           ) : current.keywords.length === 0 ? (
-            <p className="flex items-center justify-center px-4 text-center text-base text-zinc-500 dark:text-zinc-400" style={{ height: HEIGHT }}>
+            <p className="flex items-center justify-center px-4 text-center text-base text-muted" style={{ height: HEIGHT }}>
               두 명 이상이 함께 쓴 단어가 아직 없어요.
             </p>
           ) : (
@@ -189,14 +195,14 @@ export function KeywordCloud({ clouds, optionA, optionB }: Props) {
 
         {current.keywords && current.keywords.length > 0 && (
           <details className="text-sm">
-            <summary className="cursor-pointer py-1 font-semibold text-zinc-600 dark:text-zinc-400">키워드 목록으로 보기</summary>
+            <summary className="cursor-pointer py-1 font-display text-muted">키워드 목록으로 보기</summary>
             <ol className="mt-2 grid grid-cols-2 gap-x-4 gap-y-1 sm:grid-cols-3">
               {current.keywords.map((k, i) => (
                 <li key={k.text} className="flex justify-between gap-2 tabular-nums">
                   <span>
                     {i + 1}. {k.text}
                   </span>
-                  <span className="text-zinc-500 dark:text-zinc-400">{k.count}명</span>
+                  <span className="text-muted">{k.count}명</span>
                 </li>
               ))}
             </ol>

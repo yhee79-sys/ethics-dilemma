@@ -3,10 +3,10 @@ import Link from "next/link";
 import { Suspense } from "react";
 import { DilemmaStatsCard } from "@/components/stats/DilemmaStatsCard";
 import { FilterBar } from "@/components/stats/FilterBar";
-import { GENDERS, MIN_SAMPLE, TARGET_GROUPS, type Gender, type TargetGroup } from "@/lib/constants";
+import { GENDERS, MIN_SAMPLE, SITE_NAME, TARGET_GROUPS, type Gender, type TargetGroup } from "@/lib/constants";
 import { getStats } from "@/lib/stats";
 
-export const metadata: Metadata = { title: "통계 | 윤리 딜레마 설문" };
+export const metadata: Metadata = { title: `통계 | ${SITE_NAME}` };
 
 type SearchParams = Promise<Record<string, string | string[] | undefined>>;
 
@@ -30,14 +30,14 @@ async function StatsContent({ searchParams }: { searchParams: SearchParams }) {
       <FilterBar group={group} gender={gender} />
 
       <dl className="grid grid-cols-2 gap-3">
-        <div className="rounded-2xl bg-zinc-100 p-4 dark:bg-zinc-900">
-          <dt className="text-sm text-zinc-600 dark:text-zinc-400">전체 응답</dt>
-          <dd className="text-3xl font-bold tabular-nums">{stats.total}명</dd>
+        <div className="rounded-2xl bg-surface p-4">
+          <dt className="text-sm text-muted">전체 응답</dt>
+          <dd className="text-3xl font-display tabular-nums">{stats.total}명</dd>
         </div>
         {/* 필터를 바꾸면 화면 낭독기에 바뀐 조건과 인원을 알린다 */}
-        <div className="rounded-2xl bg-zinc-100 p-4 dark:bg-zinc-900" aria-live="polite" aria-atomic>
-          <dt className="text-sm text-zinc-600 dark:text-zinc-400">{filterLabel || "선택한 조건"}</dt>
-          <dd className="text-3xl font-bold tabular-nums">{stats.filtered}명</dd>
+        <div className="rounded-2xl bg-surface p-4" aria-live="polite" aria-atomic>
+          <dt className="text-sm text-muted">{filterLabel || "선택한 조건"}</dt>
+          <dd className="text-3xl font-display tabular-nums">{stats.filtered}명</dd>
         </div>
       </dl>
 
@@ -48,16 +48,18 @@ async function StatsContent({ searchParams }: { searchParams: SearchParams }) {
           ))}
         </div>
       ) : (
-        <div role="status" className="rounded-2xl border-2 border-dashed border-zinc-300 p-8 text-center dark:border-zinc-700">
-          <p className="text-xl font-bold">응답이 부족합니다</p>
-          <p className="mt-2 text-base text-zinc-600 dark:text-zinc-400">
-            응답이 {MIN_SAMPLE}명 이상 모이면 통계를 보여 줘요. 다른 조건을 골라 보세요.
+        <div role="status" className="rounded-2xl border-2 border-dashed border-line-strong p-8 text-center">
+          <p className="text-xl font-display">응답이 부족합니다</p>
+          <p className="mt-2 text-base text-muted">
+            <span className="block">응답이 {MIN_SAMPLE}명 이상 모이면 통계를 보여 줘요.</span>
+            <span className="block">다른 조건을 골라 보세요.</span>
           </p>
         </div>
       )}
 
-      <p className="text-sm text-zinc-500 dark:text-zinc-400">
-        통계는 1분마다 새로 계산돼요. 키워드는 두 명 이상이 쓴 단어만 보여 줘요.
+      <p className="text-sm text-muted">
+        <span className="block">통계는 1분마다 새로 계산돼요.</span>
+        <span className="block">키워드는 두 명 이상이 쓴 단어만 보여 줘요.</span>
       </p>
     </>
   );
@@ -66,9 +68,9 @@ async function StatsContent({ searchParams }: { searchParams: SearchParams }) {
 function StatsSkeleton() {
   return (
     <div className="space-y-6" role="status" aria-busy aria-label="통계를 불러오는 중">
-      <div className="h-24 animate-pulse rounded-2xl bg-zinc-100 dark:bg-zinc-900" />
-      <div className="h-20 animate-pulse rounded-2xl bg-zinc-100 dark:bg-zinc-900" />
-      <div className="h-96 animate-pulse rounded-3xl bg-zinc-100 dark:bg-zinc-900" />
+      <div className="h-24 animate-pulse rounded-2xl bg-surface" />
+      <div className="h-20 animate-pulse rounded-2xl bg-surface" />
+      <div className="h-96 animate-pulse rounded-3xl bg-surface" />
     </div>
   );
 }
@@ -77,10 +79,13 @@ export default function StatsPage({ searchParams }: { searchParams: SearchParams
   return (
     <main className="mx-auto w-full max-w-2xl flex-1 space-y-8 px-4 py-6">
       <div className="space-y-2">
-        <Link href="/" className="inline-block text-base text-zinc-500 hover:underline dark:text-zinc-400">
+        <Link href="/" className="inline-block text-base text-muted hover:underline">
           ← 처음으로
         </Link>
-        <h1 className="text-3xl font-bold">설문 통계</h1>
+        <div>
+          <p className="font-display text-lg text-accent-ink">{SITE_NAME}</p>
+          <h1 className="font-display text-3xl">설문 통계</h1>
+        </div>
       </div>
       <Suspense fallback={<StatsSkeleton />}>
         <StatsContent searchParams={searchParams} />

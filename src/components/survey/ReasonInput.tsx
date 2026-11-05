@@ -19,7 +19,7 @@ export function ReasonInput({ value, onChange, onBlur, error, easy, inputRef }: 
 
   return (
     <div className="space-y-2">
-      <label htmlFor={id} className="block text-lg font-semibold">
+      <label htmlFor={id} className="block text-lg font-display">
         {easy ? "왜 그렇게 골랐나요?" : "그렇게 선택한 이유는 무엇인가요?"}
       </label>
       <textarea
@@ -34,16 +34,15 @@ export function ReasonInput({ value, onChange, onBlur, error, easy, inputRef }: 
         placeholder={easy ? "내 생각을 5자 이상 써 주세요." : "선택한 이유를 5자 이상 적어 주세요."}
         aria-invalid={error ? true : undefined}
         aria-describedby={`${id}-help`}
-        className="w-full resize-y rounded-2xl border-2 border-zinc-200 bg-white p-4 text-lg leading-relaxed outline-none
-          focus:border-indigo-600 aria-invalid:border-rose-500
-          dark:border-zinc-700 dark:bg-zinc-900 dark:focus:border-indigo-400"
+        className="w-full resize-y rounded-2xl border-2 border-line-strong bg-background p-4 text-lg leading-relaxed outline-none
+          focus:border-accent aria-invalid:border-danger"
       />
       <div id={`${id}-help`} className="flex justify-between gap-4 text-sm">
         {/* 알림 영역은 항상 두고 내용만 바꾼다 (오류와 함께 role을 붙이면 읽지 않는 화면 낭독기가 있다) */}
-        <span className="text-rose-600 dark:text-rose-400" role="alert">
+        <span className="text-danger" role="alert">
           {error}
         </span>
-        <span className="shrink-0 tabular-nums text-zinc-500 dark:text-zinc-400">
+        <span className="shrink-0 tabular-nums text-muted">
           {count}/{REASON_MAX}
         </span>
       </div>

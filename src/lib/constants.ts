@@ -1,3 +1,7 @@
+/** 사이트 이름. 화면 제목과 브라우저 탭 제목에 쓴다 */
+export const SITE_NAME = "너라면 어떻게 할래?";
+export const SITE_SUBTITLE = "세 가지 고민 상황";
+
 export const TARGET_GROUPS = [
   { value: "elementary", label: "초등학생" },
   { value: "middle", label: "중학생" },

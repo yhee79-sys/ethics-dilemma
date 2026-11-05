@@ -1,6 +1,7 @@
 "use client";
 
 import type { Ref } from "react";
+import { DilemmaIcon } from "@/components/art/Art";
 import type { Choice } from "@/lib/constants";
 import type { DraftAnswer, SurveyDilemma } from "@/types/survey";
 import { ChoiceCard } from "./ChoiceCard";
@@ -25,14 +26,17 @@ export function DilemmaCard({ dilemma, easy, answer, onChange, reasonError, onRe
   return (
     <div className="space-y-6">
       <div className="space-y-3">
-        <h2 className="text-2xl font-bold">{dilemma.title}</h2>
-        <p className="rounded-2xl bg-zinc-100 p-5 text-lg leading-relaxed dark:bg-zinc-900">
+        <div className="flex items-center gap-3">
+          <DilemmaIcon id={dilemma.id} className="size-16 shrink-0" />
+          <h2 className="font-display text-2xl leading-snug">{dilemma.title}</h2>
+        </div>
+        <p className="rounded-2xl bg-surface p-5 text-lg leading-relaxed">
           {easy ? dilemma.scenario_easy : dilemma.scenario}
         </p>
       </div>
 
       <fieldset className="space-y-3">
-        <legend className="mb-3 text-lg font-semibold">{easy ? "나라면 어떻게 할까요?" : "당신의 선택은?"}</legend>
+        <legend className="mb-3 text-lg font-display">{easy ? "나라면 어떻게 할까요?" : "당신의 선택은?"}</legend>
         {(["A", "B"] as const).map((c) => (
           <ChoiceCard
             key={c}

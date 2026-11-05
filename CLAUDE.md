@@ -1,8 +1,8 @@
 @AGENTS.md
 
-# 윤리 딜레마 설문 사이트
+# 너라면 어떻게 할래? (윤리 딜레마 설문 사이트)
 
-익명 윤리 딜레마 설문과 누적 통계를 보여 주는 사이트. Next.js(App Router, TS, Tailwind) + Supabase + Vercel.
+익명 윤리 딜레마 설문과 누적 통계를 보여 주는 사이트. 사이트 이름은 "너라면 어떻게 할래?", 부제는 "세 가지 고민 상황"(`SITE_NAME`/`SITE_SUBTITLE`, `src/lib/constants.ts`). Next.js(App Router, TS, Tailwind) + Supabase + Vercel.
 
 ## 요구사항
 
@@ -80,7 +80,17 @@ supabase/migrations/       # 스키마 + 딜레마 문항
 - **Next.js 16 + Cache Components(`cacheComponents: true`)를 쓴다.** `export const revalidate`, `dynamic` 같은 route segment config는 쓸 수 없다. 대신 `"use cache"`와 `cacheLife()`를 쓴다.
   - 문항 조회(`getSurveyDilemmas`): `cacheLife("hours")`. 통계: `cacheLife("minutes")` 예정
   - error.tsx의 props는 `{ error, retry }`다(`reset` 아님).
-- 폰트는 Noto Sans KR(next/font, preload: false)이고 `word-break: keep-all`을 쓴다.
+- 폰트: 제목·버튼·라벨·숫자는 주아(`Jua`, `font-display`), 본문은 고운돋움(`Gowun_Dodum`, `font-sans`). next/font, preload: false.
+  둘 다 굵기가 400 하나뿐이라 `font-bold`/`font-semibold`는 쓰지 않고 `font-display`로 강조한다. `font-synthesis-weight: none`으로 가짜 굵게를 막는다.
+- 줄바꿈: `word-break: keep-all`(단어 중간에서 안 끊김) + `overflow-wrap: break-word`(화면보다 긴 단어만 예외). 제목은 `text-wrap: balance`, 본문은 `pretty`.
+  두 문장 이상인 안내 문구는 `<span className="block">`으로 문장(또는 뜻 단위)마다 줄을 나눈다.
+- 색: "숲길" 팔레트. 따뜻한 미색 바탕 + 숲 초록 포인트(`--accent`). 모든 색은 `globals.css` 토큰(`background`, `surface`, `muted`, `line`, `line-strong`, `accent`, `accent-soft`, `on-accent`, `accent-ink`, `danger`)이고
+  라이트·다크 값을 한곳에서 바꾼다. 컴포넌트에 `zinc`/`indigo` 같은 고정 색이나 `dark:` 색 클래스를 새로 쓰지 않는다. 글자 4.5:1, 입력칸 테두리 3:1 이상.
+  예외: A/B 그래프 색(`--choice-*`), "이미 참여했어요" 안내(amber).
+- 버튼: `btn-primary`(아래 그림자, 누르면 들어감, `disabled`·`aria-disabled` 모두 비활성 모양) / `btn-secondary` (`globals.css`의 `@layer components`).
+- 그림(`src/components/art/Art.tsx`): 직접 그린 SVG. 색은 `--art-*` 토큰만 쓰고 모두 `aria-hidden`. 새싹 흔들림(`art-sway`)은 동작 줄이기 설정에서 멈춘다.
+  첫 화면 `HomeArt`, 완료 화면 `DoneArt`, 딜레마별 `DilemmaIcon`(id 1 시험지, 2 이젤, 3 트로피, 그 밖은 새싹)을 설문 상황 카드와 통계 카드에 쓴다.
+  **응답에 영향이 없도록** 딜레마 그림은 상황 속 물건만 그리고(인물·표정 없음), A·B 선택지에는 그림 없이 똑같은 모양만 쓴다.
 - 운영 DB에 테스트 데이터를 넣으면 확인 후 **내가 넣은 행만 id로 지정해서** 지운다. 다른 행은 사용자 확인 없이 건드리지 않는다.
 - 응답 폼은 `SurveyForm`(클라이언트) 하나가 단계(대상·성별 → 문항 1..n → 확인)를 관리한다. 확인 화면에서 "고치기"를 누르면 해당 단계로 갔다가 확인 화면으로 돌아온다.
 - 초등용 문구 여부는 `group === "elementary"` 하나로 정한다. 대상을 바꾸면 문구도 바로 바뀐다.
@@ -98,11 +108,11 @@ supabase/migrations/       # 스키마 + 딜레마 문항
 7. ✅ 키워드 추출 + 워드클라우드(딜레마별, 전체/A/B 탭) + 표본 5명 미만 처리
 8. ✅ 점검 (대량 테스트 데이터, RLS 우회 시도, 키보드·화면 낭독기 코드 점검, 실제 휴대폰)
 9. ✅ Vercel 배포 (https://ethics-dilemma.vercel.app)
-10. ⬜ 디자인 다듬기 (따뜻하고 차분한 포인트 색, 라이트·다크 모드)
+10. ✅ 디자인 다듬기 (숲길 색, 주아·고운돋움 폰트, 그림, 사이트 이름 변경, 줄바꿈 정리)
 
 ## 진행 상황 (2026-11-05 기준)
 
-- 1~9단계 완료. 모두 커밋해서 GitHub(`origin/main`, https://github.com/yhee79-sys/ethics-dilemma)에 올렸다.
+- 1~10단계 완료. 모두 커밋해서 GitHub(`origin/main`, https://github.com/yhee79-sys/ethics-dilemma)에 올렸다.
 - 운영 Supabase DB(`ododcndqhxuepyhiinaq`)에는 마이그레이션 3개가 적용되어 있다(init, dilemmas, reason_required).
 - **운영 DB의 응답 데이터는 0건이다.** 테스트 데이터는 사용자가 확인한 뒤 모두 지웠다.
 - 사용자가 통계 화면(필터, 비율 막대, 워드클라우드 탭, 표본 부족 처리)을 테스트 데이터로 확인하고 승인했다.
@@ -127,9 +137,9 @@ supabase/migrations/       # 스키마 + 딜레마 문항
 
 ## 다음에 할 일
 
-### 10단계: 디자인 다듬기
-- 첫 화면 안내 문구를 문장마다 줄을 나눠 두 줄로 보여 준다.
-- 흰색·검은색 위주에서 따뜻하고 차분한 포인트 색을 넣는다. 라이트·다크 모드 둘 다 확인한다. 색과 분위기는 사용자 승인 후 적용한다.
+### 확인이 남은 것
+- 통계 딜레마 카드의 그림·워드클라우드(주아)는 응답이 5명 이상일 때만 보여서, 디자인 변경 뒤 실제 데이터로는 아직 보지 못했다.
+  응답이 쌓이면 라이트·다크에서 확인한다.
 
 ### 운영 중 할 일
 - **이제 실제 응답이 쌓이는 운영 DB다.** 테스트 응답을 넣으면 반드시 id를 기록하고 그 행만 지운다.

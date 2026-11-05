@@ -27,19 +27,19 @@ export function ChoiceRatioBar({ optionA, optionB, a, b }: Props) {
       <ul className="space-y-2" aria-hidden>
         {rows.map((r) => (
           <li key={r.key} className="flex items-start gap-3">
-            <span className={`mt-1 inline-flex size-6 shrink-0 items-center justify-center rounded-full text-xs font-bold text-white ${r.swatch}`}>
+            <span className={`mt-1 inline-flex size-6 shrink-0 items-center justify-center rounded-full text-xs font-display text-white ${r.swatch}`}>
               {r.key}
             </span>
             <span className="flex-1 text-base leading-snug">{r.text}</span>
             <span className="shrink-0 text-right tabular-nums">
-              <span className="text-xl font-bold">{r.p}%</span>
-              <span className="ml-1 text-sm text-zinc-500 dark:text-zinc-400">{r.n}명</span>
+              <span className="text-xl font-display">{r.p}%</span>
+              <span className="ml-1 text-sm text-muted">{r.n}명</span>
             </span>
           </li>
         ))}
       </ul>
 
-      <div className="flex h-4 w-full gap-0.5 overflow-hidden rounded bg-zinc-100 dark:bg-zinc-800" aria-hidden>
+      <div className="flex h-4 w-full gap-0.5 overflow-hidden rounded bg-surface" aria-hidden>
         {pa > 0 && <div className="h-full rounded bg-choice-a" style={{ width: `${pa}%` }} title={`A ${pa}% (${a}명)`} />}
         {pb > 0 && <div className="h-full rounded bg-choice-b" style={{ width: `${pb}%` }} title={`B ${pb}% (${b}명)`} />}
       </div>
