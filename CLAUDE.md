@@ -24,10 +24,11 @@
 src/
   app/
     page.tsx                 # 랜딩
-    survey/page.tsx          # 단계형 응답 폼
+    survey/page.tsx          # 문항 조회(서버) → SurveyForm
+    survey/error.tsx
     survey/actions.ts        # Server Action: 제출
     survey/done/page.tsx
-    stats/page.tsx           # revalidate = 60
+    stats/page.tsx           # "use cache" + cacheLife("minutes")
   components/survey/*, components/stats/*
   lib/supabase/server.ts     # service role 클라이언트 (서버 전용)
   lib/validation.ts          # zod
@@ -66,6 +67,12 @@ supabase/migrations/       # 스키마 + 딜레마 문항
 - 그래프: Recharts (100% 누적 가로 막대). 워드클라우드: `d3-cloud` + 직접 SVG (`react-wordcloud`는 쓰지 않는다)
 - 키워드: 규칙 기반 JS(토큰화 → 조사·어미 제거 → 불용어·금칙어 제거 → 2글자 이상 → 상위 50개). 형태소 분석기는 쓰지 않는다(Vercel 서버리스 제약).
 - 중복 제출: localStorage 플래그로 가볍게만 막는다.
+- **Next.js 16 + Cache Components(`cacheComponents: true`)를 쓴다.** `export const revalidate`, `dynamic` 같은 route segment config는 쓸 수 없다. 대신 `"use cache"`와 `cacheLife()`를 쓴다.
+  - 문항 조회(`getSurveyDilemmas`): `cacheLife("hours")`. 통계: `cacheLife("minutes")` 예정
+  - error.tsx의 props는 `{ error, retry }`다(`reset` 아님).
+- 폰트는 Noto Sans KR(next/font, preload: false)이고 `word-break: keep-all`을 쓴다.
+- 응답 폼은 `SurveyForm`(클라이언트) 하나가 단계(대상·성별 → 문항 1..n → 확인)를 관리한다. 확인 화면에서 "고치기"를 누르면 해당 단계로 갔다가 확인 화면으로 돌아온다.
+- 초등용 문구 여부는 `group === "elementary"` 하나로 정한다. 대상을 바꾸면 문구도 바로 바뀐다.
 - `SUPABASE_SERVICE_ROLE_KEY`에는 새 형식의 secret key(`sb_secret_...`)가 들어 있다. 서버 전용이므로 `NEXT_PUBLIC_` 접두사를 붙이지 않는다.
 - 서술형 길이 검증은 DB `char_length`(코드포인트 기준)와 맞추기 위해 JS에서 `[...str].length`를 쓴다(`.length`는 쓰지 않는다).
 
