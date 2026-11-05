@@ -114,7 +114,12 @@ supabase/migrations/       # 스키마 + 딜레마 문항
 
 - 1~10단계 완료. 모두 커밋해서 GitHub(`origin/main`, https://github.com/yhee79-sys/ethics-dilemma)에 올렸다.
 - 운영 Supabase DB(`ododcndqhxuepyhiinaq`)에는 마이그레이션 3개가 적용되어 있다(init, dilemmas, reason_required).
-- **운영 DB의 응답 데이터는 0건이다**(2026-11-05 10:36 UTC 확인). 테스트 데이터는 사용자가 확인한 뒤 모두 지웠다.
+- **운영 DB에는 과제 시연용 예시 응답 30명(서술형 90건)만 들어 있다**(2026-11-05 넣음). 실제 응답이 아니다.
+  - 데이터: `scripts/demo/demo-responses.mjs`(초등 8·중등 8·고등 7·성인 7, 남 13·여 13·응답하지 않음 4, 이유는 직접 쓴 문장)
+  - 넣은 id: `scripts/demo/demo-submission-ids.txt`(git에 있음)
+  - **지우기**: `node --env-file=.env.local scripts/demo/delete.mjs --yes` → 파일의 id만 지우고, 남은 게 없으면 파일을 비운다. 지운 뒤 비워진 id 파일을 커밋한다.
+  - 다시 넣기: `node --env-file=.env.local scripts/demo/seed.mjs` (id 파일이 비어 있을 때만 실행된다)
+  - 시연이 끝나고 실제 응답을 받기 전에 반드시 지운다. 그 전에 들어온 다른 응답은 지우지 않는다.
 - 사용자가 통계 화면(필터, 비율 막대, 워드클라우드 탭, 표본 부족 처리)을 테스트 데이터로 확인하고 승인했다.
 - 8단계 점검 결과 (2026-11-05)
   - RLS 우회: publishable 키, legacy anon 키, 키 없음으로 테이블 조회·추가·수정·삭제와 RPC 3개를 호출했고 모두 거부됐다(42501/401). OpenAPI 스키마와 GraphQL도 막혀 있다.
