@@ -148,18 +148,30 @@ supabase/migrations/       # 스키마 + 딜레마 문항
 
 ## 다음에 할 일
 
+### ⚠️ 시연용 데이터가 운영 DB에 들어 있다 (2026-11-05 기준)
+- https://ethics-dilemma.vercel.app 통계에 보이는 30명은 **모두 시연용 예시 응답**이다. 실제 응답을 받기 전에 반드시 지운다.
+- 지우는 방법(어느 컴퓨터든, 저장소를 최신으로 받고 `.env.local`이 있으면 된다):
+  1. `git pull`
+  2. `node --env-file=.env.local scripts/demo/delete.mjs` → 지울 인원만 알려 준다(아무것도 지우지 않음)
+  3. `node --env-file=.env.local scripts/demo/delete.mjs --yes` → `scripts/demo/demo-submission-ids.txt`의 id만 지우고, 남은 게 없으면 파일을 비운다
+  4. 비워진 id 파일을 커밋·푸시한다
+  5. 약 1분 뒤 `/stats`에서 전체 응답이 0명(또는 실제 응답 수)인지 확인한다
+- 그사이 들어온 실제 응답은 id 파일에 없으므로 지워지지 않는다. 다른 행은 사용자 확인 없이 건드리지 않는다.
+- 다시 넣기: `node --env-file=.env.local scripts/demo/seed.mjs` (id 파일이 비어 있을 때만 실행된다)
+
 ### 확인이 남은 것
 - 통계 딜레마 카드의 그림·워드클라우드(주아)는 응답이 5명 이상일 때만 보여서, 디자인 변경 뒤 실제 데이터로는 아직 보지 못했다.
   응답이 쌓이면 라이트·다크에서 확인한다.
 
 ### 운영 중 할 일
-- **이제 실제 응답이 쌓이는 운영 DB다.** 테스트 응답을 넣으면 반드시 id를 기록하고 그 행만 지운다.
+- **운영 DB다.** 테스트 응답을 넣으면 반드시 id를 파일에 기록하고 그 행만 지운다(시연용 데이터는 위 ⚠️ 항목 참고).
 - 키워드 품질: 실제 응답이 쌓이면 노이즈 단어를 보고 `STOPWORDS`/`PREDICATE_END`/`NOUN_EXCEPTIONS`를 조정한다.
   (`협력적으로` → `협력적`으로 남는 문제가 있다. 조사 `으로`가 어미 `적으로`보다 먼저 떼어지기 때문)
 - 운영 DB에 id 목록으로 지울 때는 SQL이 길어 명령줄 제한에 걸리므로 파일로 만들어 `db query --remote --yes -f <파일>`로 실행한다.
 
 ### 참고
 - Supabase CLI는 `--remote`를 붙여야 원격에 적용된다. 운영 DB에 쓰는 쿼리는 사용자 동의를 받은 뒤 `--yes`로 실행한다.
+- 작업을 마칠 때 로컬 서버(3123번 `next start`, 3000번 `next dev`)가 켜져 있으면 끈다. 2026-11-05에는 `next dev`가 3000번에 남아 있어서 껐다.
 - 로컬 확인용 서버는 `node node_modules/next/dist/bin/next start -p 3123`으로 띄운다. `npx`로 띄우면 종료할 때 자식 프로세스가 남아 포트를 계속 잡는다. 3000번 포트는 충돌한 적이 있다.
 - 라이트·다크 확인: Chrome 개발자 도구에서 Ctrl+Shift+P → "Emulate CSS prefers-color-scheme". 사이트는 기기 설정만 따른다(테마 전환 버튼 없음).
 - `.env.local`은 git에 없다. 다른 컴퓨터에서 만들 때 `SUPABASE_URL=SUPABASE_URL=...`처럼 이름이 값에 중복되어 연결이 안 된 적이 있다. 값만 넣는다.
