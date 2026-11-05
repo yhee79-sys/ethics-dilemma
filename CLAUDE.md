@@ -114,7 +114,7 @@ supabase/migrations/       # 스키마 + 딜레마 문항
 
 - 1~10단계 완료. 모두 커밋해서 GitHub(`origin/main`, https://github.com/yhee79-sys/ethics-dilemma)에 올렸다.
 - 운영 Supabase DB(`ododcndqhxuepyhiinaq`)에는 마이그레이션 3개가 적용되어 있다(init, dilemmas, reason_required).
-- **운영 DB의 응답 데이터는 0건이다.** 테스트 데이터는 사용자가 확인한 뒤 모두 지웠다.
+- **운영 DB의 응답 데이터는 0건이다**(2026-11-05 10:36 UTC 확인). 테스트 데이터는 사용자가 확인한 뒤 모두 지웠다.
 - 사용자가 통계 화면(필터, 비율 막대, 워드클라우드 탭, 표본 부족 처리)을 테스트 데이터로 확인하고 승인했다.
 - 8단계 점검 결과 (2026-11-05)
   - RLS 우회: publishable 키, legacy anon 키, 키 없음으로 테이블 조회·추가·수정·삭제와 RPC 3개를 호출했고 모두 거부됐다(42501/401). OpenAPI 스키마와 GraphQL도 막혀 있다.
@@ -134,6 +134,12 @@ supabase/migrations/       # 스키마 + 딜레마 문항
   - 배포 확인: 모든 페이지 200, 없는 주소 404, 클라이언트 JS 12개에 secret·환경변수 이름·Supabase 주소 없음,
     휴대폰 제출 → DB 저장(공백 정리) → 1분 안에 `/stats` 반영. 그 테스트 응답 1건은 사용자 확인 후 지웠다(운영 DB 0건).
   - Preview 배포(다른 브랜치)도 같은 운영 DB를 쓴다.
+- 10단계 디자인 결과 (2026-11-05). 색·폰트·그림 규칙은 위 "기술 결정"에 있다.
+  - 진행 순서: 색 후보 2개(숲길/자두) 미리보기 → 사용자가 숲길 선택 → 주아·고운돋움과 그림 미리보기 → 승인 → 적용.
+    미리보기는 claude.ai 아티팩트로 만들었다(색: https://claude.ai/artifact/4QmCpvh6LhVvNr2fd8Qvjw, 폰트·그림: https://claude.ai/artifact/2jeFoNEWsRivAuAJpSVhuj).
+  - 사이트 이름을 "너라면 어떻게 할래?"로 바꾸고(탭 제목 포함), 첫 화면에 부제 "세 가지 고민 상황"을 넣었다.
+  - 키보드·화면 낭독기 개선(8단계)과 줄바꿈 정리(완료 화면 세 줄 등)를 함께 반영했다.
+  - 배포 후 운영 주소에서 확인: 페이지 200, 폰트 파일 182개 정상, 라이트·다크 토큰, 딜레마 그림 코드, `value_label`·secret 미노출. 사용자가 실제 화면을 보고 승인했다.
 
 ## 다음에 할 일
 
@@ -150,6 +156,10 @@ supabase/migrations/       # 스키마 + 딜레마 문항
 ### 참고
 - Supabase CLI는 `--remote`를 붙여야 원격에 적용된다. 운영 DB에 쓰는 쿼리는 사용자 동의를 받은 뒤 `--yes`로 실행한다.
 - 로컬 확인용 서버는 `node node_modules/next/dist/bin/next start -p 3123`으로 띄운다. `npx`로 띄우면 종료할 때 자식 프로세스가 남아 포트를 계속 잡는다. 3000번 포트는 충돌한 적이 있다.
+- 라이트·다크 확인: Chrome 개발자 도구에서 Ctrl+Shift+P → "Emulate CSS prefers-color-scheme". 사이트는 기기 설정만 따른다(테마 전환 버튼 없음).
+- `.env.local`은 git에 없다. 다른 컴퓨터에서 만들 때 `SUPABASE_URL=SUPABASE_URL=...`처럼 이름이 값에 중복되어 연결이 안 된 적이 있다. 값만 넣는다.
+- 이 저장소 파일 일부는 CRLF 줄바꿈이다. 스크립트로 문자열을 바꿀 때는 줄바꿈을 맞춘 뒤 비교하고, 저장할 때 원래 줄바꿈을 유지한다.
+- 운영 사이트의 정적 파일은 `/_next/static/immutable/` 아래에 있다(폰트: `/_next/static/immutable/media/*.woff2`). 로컬 빌드(`/_next/static/`)와 경로가 다르다.
 
 ## 딜레마 문항 (확정)
 
