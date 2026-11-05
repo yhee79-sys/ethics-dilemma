@@ -34,7 +34,7 @@ src/
   lib/keywords.ts            # 한국어 키워드 추출 (조사 제거, 불용어, 빈도)
   lib/constants.ts
   types/db.ts
-supabase/migrations/, supabase/seed.sql
+supabase/migrations/       # 스키마 + 딜레마 문항
 ```
 
 ## DB 설계
@@ -44,22 +44,35 @@ supabase/migrations/, supabase/seed.sql
 - `submissions`: id uuid PK, target_group, gender, created_at
 - `answers`: id bigint PK, submission_id FK(cascade), dilemma_id FK, choice, reason text null
   `check (reason is null or char_length(reason) between 5 and 300)`, unique(submission_id, dilemma_id)
-- RLS: anon은 `dilemmas` SELECT만 할 수 있다. 제출과 집계는 서버(service role)에서 RPC로 처리한다.
-  - `submit_survey(group, gender, answers jsonb)`: 트랜잭션, 활성 문항 전부 응답했는지 검증
-  - `get_choice_stats(group?, gender?)`: 딜레마별 A/B 개수만 반환
+- RLS는 켜되 정책은 두지 않는다. anon/authenticated에는 테이블·함수 권한을 주지 않는다.
+  모든 읽기·쓰기는 서버에서 secret key(`sb_secret_...`, service_role 권한)로만 한다.
+- Supabase의 "Automatically expose new tables"가 꺼져 있다. **새 테이블·함수를 만들면 service_role에 필요한 GRANT를 마이그레이션에 직접 넣는다.**
+  함수는 PUBLIC에 열린 EXECUTE를 revoke한 뒤 service_role에만 grant한다.
+- RPC (모두 `security invoker`, `set search_path = ''`)
+  - `submit_survey(p_group, p_gender, p_answers jsonb) → uuid`: 트랜잭션. 활성 문항 전부에 정확히 한 번씩 응답했는지 검증하고, 공백만 있는 이유는 null로 저장
+  - `get_choice_stats(p_group?, p_gender?) → (dilemma_id, a_count, b_count)`: 응답이 없는 문항도 0으로 반환
+  - `get_reasons(p_group?, p_gender?) → (id, dilemma_id, choice, reason)`: 키워드 추출 전용. PostgREST max-rows(1000) 제한 때문에 `.range()`로 페이지 단위로 읽는다.
 - 서술형 원문은 브라우저로 내보내지 않는다. 서버에서 키워드로 집계한 결과만 전달한다.
+- 딜레마 문항은 운영 DB에도 필요하므로 `seed.sql`이 아니라 마이그레이션(`*_dilemmas.sql`)으로 넣는다. 문구를 고칠 때는 새 마이그레이션을 만든다.
+- **Supabase CLI(v3)는 기본 대상이 로컬이다. 원격 프로젝트에 쓰려면 `--remote`를 붙인다.**
+  - 적용: `npx supabase db push --remote` (사용자가 직접 실행)
+  - 타입: `npx supabase gen types typescript --remote --schema public > src/types/db.ts`
+  - 조회: `npx supabase db query --remote --read-only "<SQL>"` (쓰기 쿼리는 사용자 동의를 받은 뒤 `--yes`)
+  - 로그인과 비밀번호 입력은 TTY가 필요하므로 사용자가 별도 터미널에서 한다.
+- 마이그레이션 검증: Docker가 없으므로 PGlite(인메모리 Postgres)에 anon/authenticated/service_role 롤을 만들어 실행하고 권한까지 확인한다.
 
 ## 기술 결정
 
 - 그래프: Recharts (100% 누적 가로 막대). 워드클라우드: `d3-cloud` + 직접 SVG (`react-wordcloud`는 쓰지 않는다)
 - 키워드: 규칙 기반 JS(토큰화 → 조사·어미 제거 → 불용어·금칙어 제거 → 2글자 이상 → 상위 50개). 형태소 분석기는 쓰지 않는다(Vercel 서버리스 제약).
 - 중복 제출: localStorage 플래그로 가볍게만 막는다.
-- `SUPABASE_SERVICE_ROLE_KEY`는 서버 전용이다. `NEXT_PUBLIC_` 접두사를 붙이지 않는다.
+- `SUPABASE_SERVICE_ROLE_KEY`에는 새 형식의 secret key(`sb_secret_...`)가 들어 있다. 서버 전용이므로 `NEXT_PUBLIC_` 접두사를 붙이지 않는다.
+- 서술형 길이 검증은 DB `char_length`(코드포인트 기준)와 맞추기 위해 JS에서 `[...str].length`를 쓴다(`.length`는 쓰지 않는다).
 
 ## 작업 단계
 
 1. 프로젝트 세팅 (Next.js, 의존성, 폴더 골격, env 예시, supabase init)
-2. DB 마이그레이션 + 시드 + 타입 생성
+2. DB 마이그레이션(스키마·권한·RPC·문항) + 타입 생성
 3. 응답 페이지 UI (모바일 우선, 초등도 읽기 쉬운 글자 크기)
 4. 제출 처리 (Server Action + zod + RPC + 완료 페이지 + 중복 방지)
 5. 통계 집계 + 필터 바 + 총 응답 수
