@@ -62,7 +62,7 @@ export function ReviewStep({ group, gender, dilemmas, answers, easy, onEditProfi
                 </p>
               )}
               <p className="whitespace-pre-wrap text-base text-zinc-600 dark:text-zinc-400">
-                {reason ?? (easy ? "(이유는 쓰지 않았어요)" : "(이유 미작성)")}
+                {reason}
               </p>
             </li>
           );

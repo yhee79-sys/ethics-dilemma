@@ -19,8 +19,7 @@ export function ReasonInput({ value, onChange, onBlur, error, easy }: Props) {
   return (
     <div className="space-y-2">
       <label htmlFor={id} className="block text-lg font-semibold">
-        {easy ? "왜 그렇게 골랐나요?" : "그렇게 선택한 이유는 무엇인가요?"}{" "}
-        <span className="text-base font-normal text-zinc-500 dark:text-zinc-400">(선택)</span>
+        {easy ? "왜 그렇게 골랐나요?" : "그렇게 선택한 이유는 무엇인가요?"}
       </label>
       <textarea
         id={id}
@@ -28,7 +27,9 @@ export function ReasonInput({ value, onChange, onBlur, error, easy }: Props) {
         onChange={(e) => onChange(clampChars(e.target.value, REASON_MAX))}
         onBlur={onBlur}
         rows={4}
-        placeholder={easy ? "생각을 자유롭게 써 주세요. 안 써도 괜찮아요." : "자유롭게 적어 주세요. 비워 두어도 됩니다."}
+        required
+        aria-required
+        placeholder={easy ? "내 생각을 5자 이상 써 주세요." : "선택한 이유를 5자 이상 적어 주세요."}
         aria-invalid={error ? true : undefined}
         aria-describedby={`${id}-help`}
         className="w-full resize-y rounded-2xl border-2 border-zinc-200 bg-white p-4 text-lg leading-relaxed outline-none

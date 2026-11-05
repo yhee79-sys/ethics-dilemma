@@ -19,21 +19,21 @@ export type Database = {
           choice: Database["public"]["Enums"]["choice"]
           dilemma_id: number
           id: number
-          reason: string | null
+          reason: string
           submission_id: string
         }
         Insert: {
           choice: Database["public"]["Enums"]["choice"]
           dilemma_id: number
           id?: never
-          reason?: string | null
+          reason: string
           submission_id: string
         }
         Update: {
           choice?: Database["public"]["Enums"]["choice"]
           dilemma_id?: number
           id?: never
-          reason?: string | null
+          reason?: string
           submission_id?: string
         }
         Relationships: [

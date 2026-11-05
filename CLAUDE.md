@@ -10,13 +10,14 @@
 - **성별**: 남(`male`), 여(`female`), 응답하지 않음(`undisclosed`)
 - **개인정보 수집 안 함**: 로그인, IP, 쿠키 ID, User-Agent를 저장하지 않는다.
 - **응답 페이지** (`/survey`): 대상·성별 선택 → 딜레마 3개 → 문항마다 A/B 선택 + 서술형 이유
-  - 서술형은 **선택 항목**. 비워 두면 null로 저장하고(공백만 입력해도 null), 입력하면 **5~300자**.
+  - 서술형은 **3문항 모두 필수**이고, 앞뒤 공백을 뺀 뒤 **5~300자**여야 한다. 화면, zod, DB(NOT NULL + check + submit_survey 검증) 세 곳에서 모두 막는다.
+    (중간에 선택 항목으로 바꿨다가 2026-11-05에 다시 필수로 확정했다. 마이그레이션 `*_reason_required.sql`)
   - 초등을 고르면 쉬운 문구(`*_easy`)를 보여 준다. 중·고·성인은 기본 문구. 저장되는 `dilemma_id`/`choice`는 같다.
   - **가치 대립 라벨(예: "정직 vs 우정")은 응답 페이지에서 숨긴다.**
 - **통계 페이지** (`/stats`): 누적 통계, 대상·성별 필터(searchParams), 딜레마별 A/B 비율 그래프, 서술형 키워드 워드클라우드(딜레마 × A/B별)
   - 가치 대립 라벨은 통계 페이지에서만 보여 준다.
   - 필터 결과가 5명 미만이면 수치 대신 "응답이 부족합니다"를 표시한다(개인 추정 방지).
-  - 워드클라우드는 이유를 쓴 응답만 집계하고 "서술형 응답 n건 기준"을 표시한다.
+  - 워드클라우드는 모든 응답의 이유로 만든다(이유가 필수이므로).
 
 ## 폴더 구조
 
@@ -43,14 +44,14 @@ supabase/migrations/       # 스키마 + 딜레마 문항
 - enum `target_group`(elementary|middle|high|adult), `gender`(male|female|undisclosed), `choice`(A|B)
 - `dilemmas`: id smallint PK, sort_order, title, value_label(통계 전용), scenario, option_a, option_b, scenario_easy, option_a_easy, option_b_easy, is_active
 - `submissions`: id uuid PK, target_group, gender, created_at
-- `answers`: id bigint PK, submission_id FK(cascade), dilemma_id FK, choice, reason text null
-  `check (reason is null or char_length(reason) between 5 and 300)`, unique(submission_id, dilemma_id)
+- `answers`: id bigint PK, submission_id FK(cascade), dilemma_id FK, choice, reason text **not null**
+  `check (char_length(reason) between 5 and 300)`, unique(submission_id, dilemma_id)
 - RLS는 켜되 정책은 두지 않는다. anon/authenticated에는 테이블·함수 권한을 주지 않는다.
   모든 읽기·쓰기는 서버에서 secret key(`sb_secret_...`, service_role 권한)로만 한다.
 - Supabase의 "Automatically expose new tables"가 꺼져 있다. **새 테이블·함수를 만들면 service_role에 필요한 GRANT를 마이그레이션에 직접 넣는다.**
   함수는 PUBLIC에 열린 EXECUTE를 revoke한 뒤 service_role에만 grant한다.
 - RPC (모두 `security invoker`, `set search_path = ''`)
-  - `submit_survey(p_group, p_gender, p_answers jsonb) → uuid`: 트랜잭션. 활성 문항 전부에 정확히 한 번씩 응답했는지 검증하고, 공백만 있는 이유는 null로 저장
+  - `submit_survey(p_group, p_gender, p_answers jsonb) → uuid`: 트랜잭션. 활성 문항 전부에 정확히 한 번씩 응답했는지, 이유가 공백 제거 후 5~300자인지 검증(위반 시 22023). 이유는 앞뒤 공백을 제거해 저장
   - `get_choice_stats(p_group?, p_gender?) → (dilemma_id, a_count, b_count)`: 응답이 없는 문항도 0으로 반환
   - `get_reasons(p_group?, p_gender?) → (id, dilemma_id, choice, reason)`: 키워드 추출 전용. PostgREST max-rows(1000) 제한 때문에 `.range()`로 페이지 단위로 읽는다.
 - 서술형 원문은 브라우저로 내보내지 않는다. 서버에서 키워드로 집계한 결과만 전달한다.
@@ -66,11 +67,14 @@ supabase/migrations/       # 스키마 + 딜레마 문항
 
 - 그래프: Recharts (100% 누적 가로 막대). 워드클라우드: `d3-cloud` + 직접 SVG (`react-wordcloud`는 쓰지 않는다)
 - 키워드: 규칙 기반 JS(토큰화 → 조사·어미 제거 → 불용어·금칙어 제거 → 2글자 이상 → 상위 50개). 형태소 분석기는 쓰지 않는다(Vercel 서버리스 제약).
-- 중복 제출: localStorage 플래그로 가볍게만 막는다.
+- 제출: `submitSurvey` Server Action(`src/app/survey/actions.ts`)이 같은 zod 스키마로 다시 검증하고 RPC를 호출한다. 결과는 `{ ok } | { ok: false, error }`로 돌려주고, 클라이언트에서 `router.replace("/survey/done")`로 이동한다(redirect를 쓰지 않는다). 입력값 오류(22023/23514/22P02/23503)와 서버 오류는 안내 문구를 다르게 보여 준다.
+- 중복 제출: localStorage 플래그(`ethics-dilemma:submitted-at`, `src/lib/submitted-flag.ts`)로 가볍게만 막는다. **학교에서는 기기를 같이 쓰므로 차단하지 않는다.** "이미 참여했어요" 안내와 "새로 참여하기" 버튼만 보여 준다. 플래그는 `useSyncExternalStore`로 읽는다(hydration 불일치 방지).
+- 레이트 리밋은 하지 않는다. 서버리스에서는 메모리 기반 제한이 의미가 없고, IP를 저장하지 않는 방침이기 때문이다.
 - **Next.js 16 + Cache Components(`cacheComponents: true`)를 쓴다.** `export const revalidate`, `dynamic` 같은 route segment config는 쓸 수 없다. 대신 `"use cache"`와 `cacheLife()`를 쓴다.
   - 문항 조회(`getSurveyDilemmas`): `cacheLife("hours")`. 통계: `cacheLife("minutes")` 예정
   - error.tsx의 props는 `{ error, retry }`다(`reset` 아님).
 - 폰트는 Noto Sans KR(next/font, preload: false)이고 `word-break: keep-all`을 쓴다.
+- 운영 DB에 테스트 데이터를 넣으면 확인 후 **내가 넣은 행만 id로 지정해서** 지운다. 다른 행은 사용자 확인 없이 건드리지 않는다.
 - 응답 폼은 `SurveyForm`(클라이언트) 하나가 단계(대상·성별 → 문항 1..n → 확인)를 관리한다. 확인 화면에서 "고치기"를 누르면 해당 단계로 갔다가 확인 화면으로 돌아온다.
 - 초등용 문구 여부는 `group === "elementary"` 하나로 정한다. 대상을 바꾸면 문구도 바로 바뀐다.
 - `SUPABASE_SERVICE_ROLE_KEY`에는 새 형식의 secret key(`sb_secret_...`)가 들어 있다. 서버 전용이므로 `NEXT_PUBLIC_` 접두사를 붙이지 않는다.

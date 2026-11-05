@@ -12,18 +12,16 @@ export function clampChars(text: string, max: number): string {
   return chars.length > max ? chars.slice(0, max).join("") : text;
 }
 
-/** 앞뒤 공백 제거. 비어 있으면 null (서술형은 선택 항목) */
-export function normalizeReason(text: string | null | undefined): string | null {
-  const trimmed = (text ?? "").trim();
-  return trimmed === "" ? null : trimmed;
+/** 앞뒤 공백 제거 */
+export function normalizeReason(text: string | null | undefined): string {
+  return (text ?? "").trim();
 }
 
-/** 서술형 검증. 문제 없으면 null, 있으면 안내 문구 */
+/** 서술형 검증 (필수, 앞뒤 공백 제거 후 5~300자). 문제 없으면 null, 있으면 안내 문구 */
 export function reasonError(text: string | null | undefined): string | null {
-  const reason = normalizeReason(text);
-  if (reason === null) return null;
-  const n = charCount(reason);
-  if (n < REASON_MIN) return `이유를 쓰려면 ${REASON_MIN}자 이상 써 주세요. (비워 둬도 괜찮아요)`;
+  const n = charCount(normalizeReason(text));
+  if (n === 0) return "이유를 써 주세요.";
+  if (n < REASON_MIN) return `이유를 ${REASON_MIN}자 이상 써 주세요.`;
   if (n > REASON_MAX) return `${REASON_MAX}자까지 쓸 수 있어요.`;
   return null;
 }
@@ -42,7 +40,6 @@ export const submissionSchema = z.object({
         choice: z.enum(["A", "B"]),
         reason: z
           .string()
-          .nullable()
           .transform(normalizeReason)
           .refine((r) => reasonError(r) === null, { message: `이유는 ${REASON_MIN}~${REASON_MAX}자로 써 주세요.` }),
       }),

@@ -1,7 +1,11 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useEffect, useRef, useState, useSyncExternalStore } from "react";
+import { submitSurvey } from "@/app/survey/actions";
 import type { Gender, TargetGroup } from "@/lib/constants";
+import { hasSubmitted, markSubmitted } from "@/lib/submitted-flag";
 import { reasonError, type SubmissionInput } from "@/lib/validation";
 import type { DraftAnswer, SurveyDilemma } from "@/types/survey";
 import { DilemmaCard } from "./DilemmaCard";
@@ -9,11 +13,9 @@ import { GroupGenderSelect } from "./GroupGenderSelect";
 import { ProgressBar } from "./ProgressBar";
 import { ReviewStep } from "./ReviewStep";
 
-type Props = {
-  dilemmas: SurveyDilemma[];
-  /** 4단계에서 Server Action을 연결한다. 없으면 제출 버튼이 비활성화된다. */
-  onSubmit?: (data: SubmissionInput) => Promise<void>;
-};
+type Props = { dilemmas: SurveyDilemma[] };
+
+const noopSubscribe = () => () => {};
 
 const EMPTY: DraftAnswer = { choice: null, reason: "" };
 
@@ -22,7 +24,12 @@ const primaryBtn =
 const secondaryBtn =
   "rounded-2xl border-2 border-zinc-300 px-6 py-4 text-lg font-semibold transition-colors hover:bg-zinc-100 dark:border-zinc-700 dark:hover:bg-zinc-900";
 
-export function SurveyForm({ dilemmas, onSubmit }: Props) {
+export function SurveyForm({ dilemmas }: Props) {
+  const router = useRouter();
+  // 서버 렌더링에서는 false, 브라우저에서는 localStorage 값을 읽는다 (hydration 불일치 없음)
+  const submittedBefore = useSyncExternalStore(noopSubscribe, hasSubmitted, () => false);
+  const [noticeDismissed, setNoticeDismissed] = useState(false);
+  const showNotice = submittedBefore && !noticeDismissed;
   // step: 0 = 대상·성별, 1..n = 딜레마, n+1 = 확인
   const [step, setStep] = useState(0);
   const [group, setGroup] = useState<TargetGroup | null>(null);
@@ -83,23 +90,32 @@ export function SurveyForm({ dilemmas, onSubmit }: Props) {
   }
 
   async function handleSubmit() {
-    if (!onSubmit || !group || !gender) return;
+    if (!group || !gender || submitting) return;
     setSubmitting(true);
     setSubmitError(null);
+
+    const payload: SubmissionInput = {
+      group,
+      gender,
+      answers: dilemmas.map((d) => ({
+        dilemma_id: d.id,
+        choice: answers[d.id]?.choice ?? "A", // 확인 화면까지 왔다면 모든 문항에 선택이 있다
+        reason: answers[d.id]?.reason ?? "",
+      })),
+    };
+
     try {
-      await onSubmit({
-        group,
-        gender,
-        answers: dilemmas.map((d) => ({
-          dilemma_id: d.id,
-          choice: answers[d.id]?.choice ?? "A",
-          reason: answers[d.id]?.reason ?? null,
-        })),
-      });
+      const result = await submitSurvey(payload);
+      if (result.ok) {
+        markSubmitted();
+        router.replace("/survey/done"); // 뒤로 가기로 다시 확인 화면에 오지 않도록 replace
+        return;
+      }
+      setSubmitError(result.error);
     } catch {
-      setSubmitError("제출하지 못했어요. 잠시 후 다시 시도해 주세요.");
-      setSubmitting(false);
+      setSubmitError("인터넷 연결을 확인한 뒤 다시 시도해 주세요.");
     }
+    setSubmitting(false);
   }
 
   const canNext = step === 0 ? group !== null && gender !== null : dilemma ? answer.choice !== null : false;
@@ -115,7 +131,28 @@ export function SurveyForm({ dilemmas, onSubmit }: Props) {
         )}
       </div>
 
-      {step === 0 && (
+      {step === 0 && showNotice && (
+        <div role="status" className="space-y-3 rounded-2xl border-2 border-amber-300 bg-amber-50 p-4 dark:border-amber-700 dark:bg-amber-950">
+          <p className="text-lg font-semibold">이 기기에서 이미 설문에 참여했어요.</p>
+          <p className="text-base text-zinc-700 dark:text-zinc-300">
+            다른 사람이 이 기기로 참여하는 거라면 새로 시작해 주세요. 같은 사람이 여러 번 참여하면 통계가 정확하지 않아요.
+          </p>
+          <div className="flex flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={() => setNoticeDismissed(true)}
+              className="rounded-xl bg-amber-600 px-4 py-2 text-base font-semibold text-white hover:bg-amber-700"
+            >
+              새로 참여하기
+            </button>
+            <Link href="/stats" className="rounded-xl border border-amber-400 px-4 py-2 text-base font-semibold hover:bg-amber-100 dark:border-amber-700 dark:hover:bg-amber-900">
+              통계 보기
+            </Link>
+          </div>
+        </div>
+      )}
+
+      {step === 0 && !showNotice && (
         <GroupGenderSelect group={group} gender={gender} onGroupChange={setGroup} onGenderChange={setGender} />
       )}
 
@@ -143,22 +180,24 @@ export function SurveyForm({ dilemmas, onSubmit }: Props) {
         />
       )}
 
-      <div className="sticky bottom-0 -mx-4 flex gap-3 border-t border-zinc-200 bg-background/95 px-4 py-4 backdrop-blur dark:border-zinc-800">
-        {step > 0 && !editingFromReview && (
-          <button type="button" className={secondaryBtn} onClick={() => goTo(step - 1)} disabled={submitting}>
-            이전
-          </button>
-        )}
-        {step < reviewStep ? (
-          <button type="button" className={primaryBtn} onClick={handleNext} disabled={!canNext}>
-            {nextLabel}
-          </button>
-        ) : (
-          <button type="button" className={primaryBtn} onClick={handleSubmit} disabled={!onSubmit || submitting}>
-            {submitting ? "보내는 중…" : onSubmit ? "제출하기" : "제출 기능 준비 중"}
-          </button>
-        )}
-      </div>
+      {!(step === 0 && showNotice) && (
+        <div className="sticky bottom-0 -mx-4 flex gap-3 border-t border-zinc-200 bg-background/95 px-4 py-4 backdrop-blur dark:border-zinc-800">
+          {step > 0 && !editingFromReview && (
+            <button type="button" className={secondaryBtn} onClick={() => goTo(step - 1)} disabled={submitting}>
+              이전
+            </button>
+          )}
+          {step < reviewStep ? (
+            <button type="button" className={primaryBtn} onClick={handleNext} disabled={!canNext}>
+              {nextLabel}
+            </button>
+          ) : (
+            <button type="button" className={primaryBtn} onClick={handleSubmit} disabled={submitting} aria-busy={submitting}>
+              {submitting ? "보내는 중…" : "제출하기"}
+            </button>
+          )}
+        </div>
+      )}
 
       {submitError && (
         <p role="alert" className="text-center text-base text-rose-600 dark:text-rose-400">
