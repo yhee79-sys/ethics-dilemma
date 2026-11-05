@@ -96,7 +96,7 @@ supabase/migrations/       # 스키마 + 딜레마 문항
 5. ✅ 통계 집계 + 필터 바 + 총 응답 수
 6. ✅ A/B 비율 그래프
 7. ✅ 키워드 추출 + 워드클라우드(딜레마별, 전체/A/B 탭) + 표본 5명 미만 처리
-8. ⬜ 점검 (대량 테스트 데이터, 모바일, RLS 우회 시도)
+8. 🔶 점검 (대량 테스트 데이터 ✅, RLS 우회 시도 ✅, 모바일·접근성 ⬜)
 9. ⬜ Vercel 배포
 
 ## 진행 상황 (2026-11-05 기준)
@@ -105,17 +105,20 @@ supabase/migrations/       # 스키마 + 딜레마 문항
 - 운영 Supabase DB(`ododcndqhxuepyhiinaq`)에는 마이그레이션 3개가 적용되어 있다(init, dilemmas, reason_required).
 - **운영 DB의 응답 데이터는 0건이다.** 테스트 데이터는 사용자가 확인한 뒤 모두 지웠다.
 - 사용자가 통계 화면(필터, 비율 막대, 워드클라우드 탭, 표본 부족 처리)을 테스트 데이터로 확인하고 승인했다.
+- 8단계 점검 결과 (2026-11-05)
+  - RLS 우회: publishable 키, legacy anon 키, 키 없음으로 테이블 조회·추가·수정·삭제와 RPC 3개를 호출했고 모두 거부됐다(42501/401). OpenAPI 스키마와 GraphQL도 막혀 있다.
+    `rls_auto_enable`(Supabase가 만든 이벤트 트리거 함수)은 anon에 EXECUTE가 있지만 RPC로 호출되지 않아(0A000) 그대로 둔다.
+  - 대량 데이터: 1000명(서술형 3000건)을 `submit_survey`로 넣어 확인했다. 서술형 4페이지 누락·중복 없음, `/stats` 처음 계산 약 1초·캐시 후 약 0.03초,
+    `get_reasons` 실행 1.4ms라 인덱스는 추가하지 않았다. 사용자 확인 후 넣은 id만 지워서 운영 DB는 다시 0건이다.
+  - 키워드: 노이즈(`먼저예`, `팀으`, `공평함이`, `어려워`, `없이` 등)를 보고 `~예요/~이에요` 조사, 1글자+`으로`, `PREDICATE_END`, 불용어를 보강했다.
 
 ## 다음에 할 일
 
-### 8단계: 점검
-- 대량 테스트 데이터(수천 건)로 통계 응답 속도와 서술형 페이지 나눠 읽기(1000건 초과)를 확인한다.
-  테스트 데이터는 넣은 id를 파일에 저장해 두고, **사용자에게 화면을 확인받은 뒤** 그 id만 지운다.
-- RLS 우회 시도: publishable(anon) 키로 REST/RPC를 호출해서 모든 테이블과 함수가 막히는지 확인한다.
-  publishable 키는 `npx supabase projects api-keys`로 확인한다(`--reveal` 쓰지 않기).
+### 8단계: 점검 (남은 것)
 - 실제 휴대폰 화면 확인(iOS Safari, Android Chrome), 키보드만으로 조작, 화면 낭독기 라벨 확인
 - 키워드 품질: 실제 응답이 쌓이면 노이즈 단어를 보고 `STOPWORDS`/`PREDICATE_END`/`NOUN_EXCEPTIONS`를 조정한다.
-- (선택) `get_reasons`에 응답자 조건 인덱스가 필요한지 대량 데이터로 `explain` 확인
+  (`협력적으로` → `협력적`으로 남는 문제가 있다. 조사 `으로`가 어미 `적으로`보다 먼저 떼어지기 때문)
+- 운영 DB에 id 목록으로 지울 때는 SQL이 길어 명령줄 제한에 걸리므로 파일로 만들어 `db query --remote --yes -f <파일>`로 실행한다.
 
 ### 9단계: Vercel 배포
 - GitHub 저장소를 Vercel에 연결하고, 환경변수 `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`(secret key)를 등록한다. 둘 다 `NEXT_PUBLIC_`을 붙이지 않는다.
