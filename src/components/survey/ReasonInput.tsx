@@ -1,6 +1,6 @@
 "use client";
 
-import { useId } from "react";
+import { useId, type Ref } from "react";
 import { REASON_MAX } from "@/lib/constants";
 import { charCount, clampChars } from "@/lib/validation";
 
@@ -10,9 +10,10 @@ type Props = {
   onBlur?: () => void;
   error: string | null;
   easy: boolean;
+  inputRef?: Ref<HTMLTextAreaElement>;
 };
 
-export function ReasonInput({ value, onChange, onBlur, error, easy }: Props) {
+export function ReasonInput({ value, onChange, onBlur, error, easy, inputRef }: Props) {
   const id = useId();
   const count = charCount(value.trim());
 
@@ -22,6 +23,7 @@ export function ReasonInput({ value, onChange, onBlur, error, easy }: Props) {
         {easy ? "왜 그렇게 골랐나요?" : "그렇게 선택한 이유는 무엇인가요?"}
       </label>
       <textarea
+        ref={inputRef}
         id={id}
         value={value}
         onChange={(e) => onChange(clampChars(e.target.value, REASON_MAX))}
@@ -37,7 +39,8 @@ export function ReasonInput({ value, onChange, onBlur, error, easy }: Props) {
           dark:border-zinc-700 dark:bg-zinc-900 dark:focus:border-indigo-400"
       />
       <div id={`${id}-help`} className="flex justify-between gap-4 text-sm">
-        <span className="text-rose-600 dark:text-rose-400" role={error ? "alert" : undefined}>
+        {/* 알림 영역은 항상 두고 내용만 바꾼다 (오류와 함께 role을 붙이면 읽지 않는 화면 낭독기가 있다) */}
+        <span className="text-rose-600 dark:text-rose-400" role="alert">
           {error}
         </span>
         <span className="shrink-0 tabular-nums text-zinc-500 dark:text-zinc-400">

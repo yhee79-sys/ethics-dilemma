@@ -1,7 +1,7 @@
 "use client";
 
 import CloudLayout from "d3-cloud";
-import { useEffect, useId, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState, type KeyboardEvent } from "react";
 import { MIN_SAMPLE } from "@/lib/constants";
 import type { Keyword } from "@/lib/keywords";
 import type { Cloud, CloudBucket } from "@/lib/stats";
@@ -121,25 +121,49 @@ export function KeywordCloud({ clouds, optionA, optionB }: Props) {
   const current = clouds[tab];
   const meta = TABS.find((t) => t.key === tab)!;
   const tabTitle = tab === "all" ? "전체 응답" : `${meta.label}: ${tab === "A" ? optionA : optionB}`;
+  const tabRefs = useRef<(HTMLButtonElement | null)[]>([]);
+
+  // ARIA 탭 패턴: 선택된 탭만 Tab 순서에 두고, ←/→/Home/End로 탭을 옮기며 바로 선택한다
+  function onTabKeyDown(e: KeyboardEvent<HTMLButtonElement>, index: number) {
+    const last = TABS.length - 1;
+    const next =
+      e.key === "ArrowRight" ? (index === last ? 0 : index + 1)
+      : e.key === "ArrowLeft" ? (index === 0 ? last : index - 1)
+      : e.key === "Home" ? 0
+      : e.key === "End" ? last
+      : null;
+    if (next === null) return;
+    e.preventDefault();
+    setTab(TABS[next].key);
+    tabRefs.current[next]?.focus();
+  }
 
   return (
     <div className="space-y-3">
       <div role="tablist" aria-label="키워드 보기" className="flex gap-1 rounded-xl bg-zinc-100 p-1 dark:bg-zinc-900">
-        {TABS.map((t) => (
+        {TABS.map((t, i) => (
           <button
             key={t.key}
+            ref={(el) => {
+              tabRefs.current[i] = el;
+            }}
             type="button"
             role="tab"
             id={`${id}-tab-${t.key}`}
             aria-selected={tab === t.key}
             aria-controls={`${id}-panel`}
+            tabIndex={tab === t.key ? 0 : -1}
             onClick={() => setTab(t.key)}
+            onKeyDown={(e) => onTabKeyDown(e, i)}
             className="flex flex-1 items-center justify-center gap-1 whitespace-nowrap rounded-lg px-1.5 py-2 text-sm font-semibold text-zinc-600 transition-colors
               aria-selected:bg-white aria-selected:text-foreground aria-selected:shadow-sm dark:text-zinc-400 dark:aria-selected:bg-zinc-800"
           >
             {t.key !== "all" && <span aria-hidden className={`size-2.5 rounded-full ${t.key === "A" ? "bg-choice-a" : "bg-choice-b"}`} />}
             {t.label}
-            <span className="font-normal tabular-nums text-zinc-500 dark:text-zinc-400">{clouds[t.key].n}</span>
+            <span className="font-normal tabular-nums text-zinc-500 dark:text-zinc-400">
+              {clouds[t.key].n}
+              <span className="sr-only">건</span>
+            </span>
           </button>
         ))}
       </div>

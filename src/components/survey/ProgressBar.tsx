@@ -12,6 +12,7 @@ export function ProgressBar({ current, total }: Props) {
         aria-valuemin={0}
         aria-valuemax={total}
         aria-valuenow={current}
+        aria-valuetext={`질문 ${current} / ${total}`}
         aria-label="설문 진행도"
         className="h-2 overflow-hidden rounded-full bg-zinc-200 dark:bg-zinc-800"
       >

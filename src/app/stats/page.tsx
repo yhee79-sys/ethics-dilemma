@@ -34,7 +34,8 @@ async function StatsContent({ searchParams }: { searchParams: SearchParams }) {
           <dt className="text-sm text-zinc-600 dark:text-zinc-400">전체 응답</dt>
           <dd className="text-3xl font-bold tabular-nums">{stats.total}명</dd>
         </div>
-        <div className="rounded-2xl bg-zinc-100 p-4 dark:bg-zinc-900">
+        {/* 필터를 바꾸면 화면 낭독기에 바뀐 조건과 인원을 알린다 */}
+        <div className="rounded-2xl bg-zinc-100 p-4 dark:bg-zinc-900" aria-live="polite" aria-atomic>
           <dt className="text-sm text-zinc-600 dark:text-zinc-400">{filterLabel || "선택한 조건"}</dt>
           <dd className="text-3xl font-bold tabular-nums">{stats.filtered}명</dd>
         </div>
@@ -64,7 +65,7 @@ async function StatsContent({ searchParams }: { searchParams: SearchParams }) {
 
 function StatsSkeleton() {
   return (
-    <div className="space-y-6" aria-busy aria-label="통계를 불러오는 중">
+    <div className="space-y-6" role="status" aria-busy aria-label="통계를 불러오는 중">
       <div className="h-24 animate-pulse rounded-2xl bg-zinc-100 dark:bg-zinc-900" />
       <div className="h-20 animate-pulse rounded-2xl bg-zinc-100 dark:bg-zinc-900" />
       <div className="h-96 animate-pulse rounded-3xl bg-zinc-100 dark:bg-zinc-900" />

@@ -1,5 +1,6 @@
 "use client";
 
+import type { Ref } from "react";
 import type { Choice } from "@/lib/constants";
 import type { DraftAnswer, SurveyDilemma } from "@/types/survey";
 import { ChoiceCard } from "./ChoiceCard";
@@ -12,6 +13,7 @@ type Props = {
   onChange: (answer: DraftAnswer) => void;
   reasonError: string | null;
   onReasonBlur: () => void;
+  reasonRef?: Ref<HTMLTextAreaElement>;
 };
 
 export function optionText(d: SurveyDilemma, choice: Choice, easy: boolean) {
@@ -19,7 +21,7 @@ export function optionText(d: SurveyDilemma, choice: Choice, easy: boolean) {
   return easy ? d.option_b_easy : d.option_b;
 }
 
-export function DilemmaCard({ dilemma, easy, answer, onChange, reasonError, onReasonBlur }: Props) {
+export function DilemmaCard({ dilemma, easy, answer, onChange, reasonError, onReasonBlur, reasonRef }: Props) {
   return (
     <div className="space-y-6">
       <div className="space-y-3">
@@ -51,6 +53,7 @@ export function DilemmaCard({ dilemma, easy, answer, onChange, reasonError, onRe
         onBlur={onReasonBlur}
         error={reasonError}
         easy={easy}
+        inputRef={reasonRef}
       />
     </div>
   );

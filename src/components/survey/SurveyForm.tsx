@@ -19,8 +19,12 @@ const noopSubscribe = () => () => {};
 
 const EMPTY: DraftAnswer = { choice: null, reason: "" };
 
+// "다음"은 disabled 대신 aria-disabled를 쓴다. disabled면 Tab 순서에서 빠져서 키보드·화면 낭독기 사용자가 이유를 알 수 없다.
 const primaryBtn =
-  "flex-1 rounded-2xl bg-indigo-600 px-6 py-4 text-lg font-semibold text-white transition-colors hover:bg-indigo-700 disabled:cursor-not-allowed disabled:bg-zinc-300 disabled:text-zinc-500 dark:bg-indigo-600 dark:hover:bg-indigo-500 dark:disabled:bg-zinc-800 dark:disabled:text-zinc-500";
+  "flex-1 rounded-2xl bg-indigo-600 px-6 py-4 text-lg font-semibold text-white transition-colors hover:bg-indigo-700 dark:bg-indigo-600 dark:hover:bg-indigo-500 " +
+  "disabled:cursor-not-allowed disabled:bg-zinc-300 disabled:text-zinc-500 dark:disabled:bg-zinc-800 dark:disabled:text-zinc-500 " +
+  "aria-disabled:cursor-not-allowed aria-disabled:bg-zinc-300 aria-disabled:text-zinc-500 aria-disabled:hover:bg-zinc-300 " +
+  "dark:aria-disabled:bg-zinc-800 dark:aria-disabled:text-zinc-500 dark:aria-disabled:hover:bg-zinc-800";
 const secondaryBtn =
   "rounded-2xl border-2 border-zinc-300 px-6 py-4 text-lg font-semibold transition-colors hover:bg-zinc-100 dark:border-zinc-700 dark:hover:bg-zinc-900";
 
@@ -36,10 +40,12 @@ export function SurveyForm({ dilemmas }: Props) {
   const [gender, setGender] = useState<Gender | null>(null);
   const [answers, setAnswers] = useState<Record<number, DraftAnswer>>({});
   const [showReasonError, setShowReasonError] = useState(false);
+  const [showMissing, setShowMissing] = useState(false);
   const [editingFromReview, setEditingFromReview] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const headingRef = useRef<HTMLDivElement>(null);
+  const reasonRef = useRef<HTMLTextAreaElement>(null);
 
   const total = dilemmas.length;
   const reviewStep = total + 1;
@@ -48,6 +54,8 @@ export function SurveyForm({ dilemmas }: Props) {
   const answer = dilemma ? (answers[dilemma.id] ?? EMPTY) : EMPTY;
   const currentReasonError = dilemma ? reasonError(answer.reason) : null;
   const dirty = group !== null || gender !== null || Object.keys(answers).length > 0;
+  const canNext = step === 0 ? group !== null && gender !== null : dilemma ? answer.choice !== null : false;
+  const missingMessage = showMissing && !canNext ? (step === 0 ? "대상과 성별을 골라 주세요." : "A나 B 중 하나를 골라 주세요.") : "";
 
   // 단계가 바뀌면 맨 위로 이동하고, 화면 낭독기 사용자를 위해 포커스를 옮긴다
   useEffect(() => {
@@ -65,16 +73,19 @@ export function SurveyForm({ dilemmas }: Props) {
 
   function goTo(next: number) {
     setShowReasonError(false);
+    setShowMissing(false);
     setStep(next);
   }
 
   function handleNext() {
-    if (dilemma) {
-      if (!answer.choice) return;
-      if (currentReasonError) {
-        setShowReasonError(true);
-        return;
-      }
+    if (!canNext) {
+      setShowMissing(true);
+      return;
+    }
+    if (dilemma && currentReasonError) {
+      setShowReasonError(true);
+      reasonRef.current?.focus(); // 고칠 곳으로 바로 이동
+      return;
     }
     if (editingFromReview) {
       setEditingFromReview(false);
@@ -118,7 +129,6 @@ export function SurveyForm({ dilemmas }: Props) {
     setSubmitting(false);
   }
 
-  const canNext = step === 0 ? group !== null && gender !== null : dilemma ? answer.choice !== null : false;
   const nextLabel = editingFromReview ? "확인 화면으로" : step === total ? "다 했어요" : "다음";
 
   return (
@@ -165,6 +175,7 @@ export function SurveyForm({ dilemmas }: Props) {
           onChange={(a) => setAnswers((prev) => ({ ...prev, [dilemma.id]: a }))}
           reasonError={showReasonError ? currentReasonError : null}
           onReasonBlur={() => setShowReasonError(true)}
+          reasonRef={reasonRef}
         />
       )}
 
@@ -181,21 +192,27 @@ export function SurveyForm({ dilemmas }: Props) {
       )}
 
       {!(step === 0 && showNotice) && (
-        <div className="sticky bottom-0 -mx-4 flex gap-3 border-t border-zinc-200 bg-background/95 px-4 py-4 backdrop-blur dark:border-zinc-800">
-          {step > 0 && !editingFromReview && (
-            <button type="button" className={secondaryBtn} onClick={() => goTo(step - 1)} disabled={submitting}>
-              이전
-            </button>
-          )}
-          {step < reviewStep ? (
-            <button type="button" className={primaryBtn} onClick={handleNext} disabled={!canNext}>
-              {nextLabel}
-            </button>
-          ) : (
-            <button type="button" className={primaryBtn} onClick={handleSubmit} disabled={submitting} aria-busy={submitting}>
-              {submitting ? "보내는 중…" : "제출하기"}
-            </button>
-          )}
+        <div className="sticky bottom-0 -mx-4 space-y-2 border-t border-zinc-200 bg-background/95 px-4 py-4 backdrop-blur dark:border-zinc-800">
+          {/* 알림 영역은 항상 두고 내용만 바꾼다. 비어 있을 때는 자리를 차지하지 않게 sr-only */}
+          <p role="alert" className="text-center text-base font-semibold text-rose-600 empty:sr-only dark:text-rose-400">
+            {missingMessage}
+          </p>
+          <div className="flex gap-3">
+            {step > 0 && !editingFromReview && (
+              <button type="button" className={secondaryBtn} onClick={() => goTo(step - 1)} disabled={submitting}>
+                이전
+              </button>
+            )}
+            {step < reviewStep ? (
+              <button type="button" className={primaryBtn} onClick={handleNext} aria-disabled={!canNext}>
+                {nextLabel}
+              </button>
+            ) : (
+              <button type="button" className={primaryBtn} onClick={handleSubmit} disabled={submitting} aria-busy={submitting}>
+                {submitting ? "보내는 중…" : "제출하기"}
+              </button>
+            )}
+          </div>
         </div>
       )}
 

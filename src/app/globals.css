@@ -32,6 +32,11 @@
   --font-sans: var(--font-noto-sans-kr), system-ui, sans-serif;
 }
 
+/* 설문 하단 고정 버튼 바에 Tab 포커스가 가려지지 않도록 스크롤 여백을 둔다 */
+html {
+  scroll-padding-bottom: 8rem;
+}
+
 body {
   background: var(--background);
   color: var(--foreground);
